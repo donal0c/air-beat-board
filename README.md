@@ -4,6 +4,12 @@ Air Beat Board is a browser-based musical instrument built around a tactile 5-ro
 
 The app is deliberately static: no framework, no package manager, no build step. Open it from a local web server and it runs in the browser.
 
+## Screenshots
+
+![Air Beat Board desktop workspace](assets/screenshots/desktop-board.png)
+
+![Air Beat Board playable board detail](assets/screenshots/instrument-panel.png)
+
 ## What It Does
 
 - Creates a 5-channel beat board with 8 visible columns.
@@ -166,4 +172,3 @@ Camera frames are processed in the browser for hand tracking. The app does not i
 ## License
 
 No license has been selected yet. Treat the code and assets as private unless a license is added by the repository owner.
-
