@@ -583,7 +583,7 @@ h1 {
 .grid-area {
   min-height: 0;
   display: grid;
-  grid-template-columns: 86px 1fr;
+  grid-template-columns: 116px 1fr;
   gap: 12px;
   align-self: center;
 }
@@ -596,14 +596,24 @@ h1 {
 }
 
 .row-label {
-  display: flex;
+  display: grid;
+  grid-template-columns: 18px 12px minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 9px;
-  padding-right: 6px;
+  gap: 8px;
+  padding-right: 10px;
   font-weight: 900;
   color: rgba(38, 22, 8, 0.82);
   border-bottom: 1px solid rgba(45, 24, 9, 0.22);
+}
+
+.row-label strong {
+  text-align: right;
+}
+
+.row-label em {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .row-label span {
@@ -1140,7 +1150,7 @@ h1 {
   }
 
   .grid-area {
-    grid-template-columns: 76px 1fr;
+    grid-template-columns: 104px 1fr;
     gap: 8px;
   }
 
@@ -1347,11 +1357,14 @@ h1 {
   }
 
   .grid-area {
-    grid-template-columns: 74px 1fr;
+    grid-template-columns: 88px 1fr;
   }
 
   .row-label {
     font-size: 0.72rem;
+    grid-template-columns: 16px 10px minmax(0, 1fr);
+    gap: 6px;
+    padding-right: 6px;
   }
 
   .board-surface {
