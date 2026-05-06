@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Air Beat Board</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23d99b45'/%3E%3Ccircle cx='32' cy='32' r='18' fill='%23201810'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -165,12 +166,61 @@
           </section>
 
           <section class="dock-section state-dock">
-            <div class="section-head"><span>Cell state</span><strong id="selectedReadout">Row 1 · Col 1</strong></div>
-            <div class="state-buttons">
-              <button class="state-btn" data-state="empty">Empty</button>
-              <button class="state-btn active" data-state="first">First<br><small>1/16</small></button>
-              <button class="state-btn" data-state="second">Second<br><small>2/16</small></button>
-              <button class="state-btn" data-state="both">Both<br><small>1 + 2</small></button>
+            <div class="section-head inspector-head">
+              <div>
+                <span>Inspector</span>
+                <strong id="selectedReadout">Kick · Col 1</strong>
+              </div>
+              <div class="inspector-tabs" role="tablist" aria-label="Inspector mode">
+                <button class="inspector-tab active" data-inspector-tab="cell" role="tab" aria-selected="true">Cell</button>
+                <button class="inspector-tab" data-inspector-tab="sound" role="tab" aria-selected="false">Sound</button>
+              </div>
+            </div>
+
+            <div id="cellPanel" class="inspector-panel cell-panel">
+              <div class="state-buttons">
+                <button class="state-btn" data-state="empty">Empty</button>
+                <button class="state-btn active" data-state="first">First<br><small>1/16</small></button>
+                <button class="state-btn" data-state="second">Second<br><small>2/16</small></button>
+                <button class="state-btn" data-state="both">Both<br><small>1 + 2</small></button>
+              </div>
+            </div>
+
+            <div id="soundPanel" class="inspector-panel sound-panel hidden">
+              <div class="sound-title">
+                <span>Selected row</span>
+                <strong id="soundReadout">Kick · Slot A built-in</strong>
+              </div>
+              <div class="sound-grid">
+                <label class="sound-control">
+                  <span><b>Gain</b><output id="rowGainValue">80%</output></span>
+                  <input id="rowGain" data-sound-param="gain" type="range" min="0" max="140" value="80" />
+                </label>
+                <label class="sound-control">
+                  <span><b>Drive</b><output id="rowDriveValue">0%</output></span>
+                  <input id="rowDrive" data-sound-param="drive" type="range" min="0" max="100" value="0" />
+                </label>
+                <label class="sound-control">
+                  <span><b>Tone</b><output id="rowToneValue">62%</output></span>
+                  <input id="rowTone" data-sound-param="tone" type="range" min="0" max="100" value="62" />
+                </label>
+                <label class="sound-control">
+                  <span><b>Decay</b><output id="rowDecayValue">100%</output></span>
+                  <input id="rowDecay" data-sound-param="decay" type="range" min="25" max="150" value="100" />
+                </label>
+                <label class="sound-control">
+                  <span><b>Pan</b><output id="rowPanValue">C</output></span>
+                  <input id="rowPan" data-sound-param="pan" type="range" min="-100" max="100" value="0" />
+                </label>
+                <label class="sound-control">
+                  <span><b>Pitch</b><output id="rowPitchValue">0</output></span>
+                  <input id="rowPitchDetail" data-sound-param="pitch" type="range" min="-24" max="24" value="0" />
+                </label>
+                <label class="sound-control">
+                  <span><b>Send</b><output id="rowSendValue">18%</output></span>
+                  <input id="rowSendDetail" data-sound-param="send" type="range" min="0" max="100" value="18" />
+                </label>
+              </div>
             </div>
           </section>
         </div>

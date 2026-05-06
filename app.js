@@ -57,11 +57,21 @@ const KITS = {
 };
 
 const STATE_ORDER = ["empty", "first", "second", "both"];
+const DEFAULT_SOUND = {
+  gain: 0.8,
+  drive: 0,
+  tone: 0.62,
+  decay: 1,
+  pan: 0,
+  send: 0.18,
+  color: 0.48
+};
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 const lerp = (a, b, t) => a + (b - a) * t;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const closeTo = (a, b, epsilon = 0.0001) => Math.abs(a - b) <= epsilon;
 
 const refs = {
   runtimeStatus: $("#runtimeStatus"),
@@ -94,6 +104,23 @@ const refs = {
   tokenTray: $("#tokenTray"),
   tokenCount: $("#tokenCount"),
   selectedReadout: $("#selectedReadout"),
+  cellPanel: $("#cellPanel"),
+  soundPanel: $("#soundPanel"),
+  soundReadout: $("#soundReadout"),
+  rowGain: $("#rowGain"),
+  rowGainValue: $("#rowGainValue"),
+  rowDrive: $("#rowDrive"),
+  rowDriveValue: $("#rowDriveValue"),
+  rowTone: $("#rowTone"),
+  rowToneValue: $("#rowToneValue"),
+  rowDecay: $("#rowDecay"),
+  rowDecayValue: $("#rowDecayValue"),
+  rowPan: $("#rowPan"),
+  rowPanValue: $("#rowPanValue"),
+  rowPitchDetail: $("#rowPitchDetail"),
+  rowPitchValue: $("#rowPitchValue"),
+  rowSendDetail: $("#rowSendDetail"),
+  rowSendValue: $("#rowSendValue"),
   clearBtn: $("#clearBtn"),
   importBtn: $("#importBtn"),
   randomizeBtn: $("#randomizeBtn"),
@@ -121,10 +148,17 @@ const state = {
   length: 16,
   kit: "warm",
   master: 0.82,
+  inspectorTab: "cell",
   rows: ROWS.map(() => ({
     volume: 0.82,
     pitch: 0,
-    send: 0.18,
+    send: DEFAULT_SOUND.send,
+    gain: DEFAULT_SOUND.gain,
+    drive: DEFAULT_SOUND.drive,
+    tone: DEFAULT_SOUND.tone,
+    decay: DEFAULT_SOUND.decay,
+    pan: DEFAULT_SOUND.pan,
+    color: DEFAULT_SOUND.color,
     muted: false,
     slot: "a",
     samples: { a: null, b: null },
@@ -268,27 +302,90 @@ class AirBeatAudio {
     const rowState = state.rows[row];
     const slot = rowState.slot;
     const buffer = rowState.samples[slot];
-    const volume = rowState.volume;
+    const volume = rowState.volume * (rowState.gain / 0.8);
     const send = rowState.send;
+    const pitch = rowState.pitch;
 
     if (buffer) {
-      this.sample(row, t, buffer, volume, rowState.pitch, send);
+      this.sample(row, t, buffer, volume, pitch, send);
     } else {
       const kitLift = state.kit === "club" ? 1.12 : state.kit === "lofi" ? 0.82 : 1;
-      if (row === 0) this.kick(t, volume * kitLift, rowState.pitch, send);
-      if (row === 1) this.snare(t, volume * kitLift, rowState.pitch, send);
-      if (row === 2) this.hat(t, volume * kitLift, rowState.pitch, send);
-      if (row === 3) this.perc(t, volume * kitLift, rowState.pitch, send);
-      if (row === 4) this.bass(t, volume * kitLift, rowState.pitch, send);
+      if (row === 0) this.kick(row, t, volume * kitLift, pitch, send);
+      if (row === 1) this.snare(row, t, volume * kitLift, pitch, send);
+      if (row === 2) this.hat(row, t, volume * kitLift, pitch, send);
+      if (row === 3) this.perc(row, t, volume * kitLift, pitch, send);
+      if (row === 4) this.bass(row, t, volume * kitLift, pitch, send);
     }
 
     this.level = Math.min(1, this.level + 0.18 + volume * 0.2);
   }
 
-  voiceOutput(gainValue, sendValue) {
+  effectiveTone(row) {
+    const rowState = state.rows[row];
+    return clamp(rowState.tone + (rowState.color - 0.5) * 0.34, 0, 1);
+  }
+
+  effectiveDrive(row) {
+    const rowState = state.rows[row];
+    return clamp(rowState.drive, 0, 1);
+  }
+
+  usesNeutralSoundPath(row) {
+    const rowState = state.rows[row];
+    return closeTo(rowState.gain, DEFAULT_SOUND.gain)
+      && closeTo(rowState.drive, DEFAULT_SOUND.drive)
+      && closeTo(rowState.tone, DEFAULT_SOUND.tone)
+      && closeTo(rowState.decay, DEFAULT_SOUND.decay)
+      && closeTo(rowState.pan, DEFAULT_SOUND.pan)
+      && closeTo(rowState.color, DEFAULT_SOUND.color);
+  }
+
+  voiceOutput(row, gainValue, sendValue) {
+    const rowState = state.rows[row];
+    if (this.usesNeutralSoundPath(row)) {
+      const out = this.ac.createGain();
+      out.gain.value = gainValue;
+      out.connect(this.master);
+
+      if (sendValue > 0) {
+        const send = this.ac.createGain();
+        send.gain.value = sendValue * 0.46;
+        out.connect(send).connect(this.delay);
+      }
+
+      return out;
+    }
+
+    const tone = this.effectiveTone(row);
+    const drive = this.effectiveDrive(row);
     const out = this.ac.createGain();
     out.gain.value = gainValue;
-    out.connect(this.master);
+    let tail = out;
+
+    if (drive > 0.02) {
+      const driveGain = this.ac.createGain();
+      const shaper = this.ac.createWaveShaper();
+      driveGain.gain.value = lerp(1, 3.8, drive);
+      shaper.curve = this.distortionCurve(drive);
+      shaper.oversample = "2x";
+      tail = tail.connect(driveGain).connect(shaper);
+    }
+
+    if (!closeTo(rowState.tone, DEFAULT_SOUND.tone) || !closeTo(rowState.color, DEFAULT_SOUND.color)) {
+      const filter = this.ac.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = lerp(520, 11800, tone);
+      filter.Q.value = lerp(0.35, 1.2, tone);
+      tail = tail.connect(filter);
+    }
+
+    if (!closeTo(rowState.pan, DEFAULT_SOUND.pan)) {
+      const panner = this.ac.createStereoPanner();
+      panner.pan.value = rowState.pan;
+      tail = tail.connect(panner);
+    }
+
+    tail.connect(this.master);
 
     if (sendValue > 0) {
       const send = this.ac.createGain();
@@ -297,6 +394,17 @@ class AirBeatAudio {
     }
 
     return out;
+  }
+
+  distortionCurve(amount) {
+    const samples = 256;
+    const curve = new Float32Array(samples);
+    const k = 8 + amount * 52;
+    for (let i = 0; i < samples; i += 1) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
+    }
+    return curve;
   }
 
   envGain(t, peak, attack, decay, end = 0.0001) {
@@ -312,16 +420,20 @@ class AirBeatAudio {
     src.buffer = buffer;
     src.playbackRate.value = Math.pow(2, pitch / 12);
 
-    const out = this.voiceOutput(0.78 * volume, send);
-    src.connect(out);
+    const rowState = state.rows[row];
+    const env = this.envGain(t, 0.78 * volume, 0.004, Math.min(buffer.duration, 0.72) * rowState.decay);
+    const out = this.voiceOutput(row, 1, send);
+    src.connect(env).connect(out);
     src.start(t);
+    src.stop(t + Math.min(buffer.duration / src.playbackRate.value, 1.4 * rowState.decay));
   }
 
-  kick(t, volume, pitch, send) {
+  kick(row, t, volume, pitch, send) {
     const osc = this.ac.createOscillator();
     const body = this.ac.createOscillator();
-    const gain = this.envGain(t, 0.9 * volume, 0.004, 0.32);
-    const out = this.voiceOutput(0.92, send);
+    const decay = state.rows[row].decay;
+    const gain = this.envGain(t, 0.9 * volume, 0.004, 0.32 * decay);
+    const out = this.voiceOutput(row, 0.92, send);
     const pitchMul = Math.pow(2, pitch / 24);
 
     osc.type = "sine";
@@ -335,13 +447,14 @@ class AirBeatAudio {
     gain.connect(out);
     osc.start(t);
     body.start(t);
-    osc.stop(t + 0.38);
-    body.stop(t + 0.22);
+    osc.stop(t + 0.38 * decay);
+    body.stop(t + 0.22 * decay);
   }
 
-  snare(t, volume, pitch, send) {
+  snare(row, t, volume, pitch, send) {
     const src = this.ac.createBufferSource();
     src.buffer = this.noiseBuffer;
+    const decay = state.rows[row].decay;
 
     const hp = this.ac.createBiquadFilter();
     hp.type = "highpass";
@@ -351,44 +464,47 @@ class AirBeatAudio {
     bp.frequency.value = 1850 + pitch * 35;
     bp.Q.value = 0.9;
 
-    const gain = this.envGain(t, 0.35 * volume, 0.003, 0.16);
-    const out = this.voiceOutput(1, send);
+    const gain = this.envGain(t, 0.35 * volume, 0.003, 0.16 * decay);
+    const out = this.voiceOutput(row, 1, send);
 
     src.connect(hp).connect(bp).connect(gain).connect(out);
     src.start(t);
-    src.stop(t + 0.18);
+    src.stop(t + 0.18 * decay);
   }
 
-  hat(t, volume, pitch, send) {
+  hat(row, t, volume, pitch, send) {
     const src = this.ac.createBufferSource();
     src.buffer = this.noiseBuffer;
+    const decay = state.rows[row].decay;
     const hp = this.ac.createBiquadFilter();
     hp.type = "highpass";
     hp.frequency.value = 6200 + pitch * 110;
-    const gain = this.envGain(t, 0.12 * volume, 0.001, 0.045);
-    const out = this.voiceOutput(1, send);
+    const gain = this.envGain(t, 0.12 * volume, 0.001, 0.045 * decay);
+    const out = this.voiceOutput(row, 1, send);
     src.connect(hp).connect(gain).connect(out);
     src.start(t);
-    src.stop(t + 0.08);
+    src.stop(t + 0.08 * decay);
   }
 
-  perc(t, volume, pitch, send) {
+  perc(row, t, volume, pitch, send) {
     const osc = this.ac.createOscillator();
+    const decay = state.rows[row].decay;
     osc.type = "triangle";
     osc.frequency.setValueAtTime(210 * Math.pow(2, pitch / 18), t);
     osc.frequency.exponentialRampToValueAtTime(125 * Math.pow(2, pitch / 18), t + 0.08);
-    const gain = this.envGain(t, 0.22 * volume, 0.003, 0.105);
-    const out = this.voiceOutput(0.85, send);
+    const gain = this.envGain(t, 0.22 * volume, 0.003, 0.105 * decay);
+    const out = this.voiceOutput(row, 0.85, send);
     osc.connect(gain).connect(out);
     osc.start(t);
-    osc.stop(t + 0.13);
+    osc.stop(t + 0.13 * decay);
   }
 
-  bass(t, volume, pitch, send) {
+  bass(row, t, volume, pitch, send) {
     const osc = this.ac.createOscillator();
     const filter = this.ac.createBiquadFilter();
-    const gain = this.envGain(t, 0.24 * volume, 0.006, 0.19);
-    const out = this.voiceOutput(0.78, send);
+    const decay = state.rows[row].decay;
+    const gain = this.envGain(t, 0.24 * volume, 0.006, 0.19 * decay);
+    const out = this.voiceOutput(row, 0.78, send);
     const root = state.kit === "lofi" ? 43 : state.kit === "club" ? 36 : 40;
     const freq = 440 * Math.pow(2, (root + pitch - 69) / 12);
 
@@ -401,7 +517,7 @@ class AirBeatAudio {
 
     osc.connect(filter).connect(gain).connect(out);
     osc.start(t);
-    osc.stop(t + 0.24);
+    osc.stop(t + 0.24 * decay);
   }
 }
 
@@ -495,16 +611,12 @@ function renderStaticUi() {
           <input class="row-volume" data-row="${index}" type="range" min="0" max="100" value="${Math.round(state.rows[index].volume * 100)}" />
         </label>
         <label class="knob-control">
-          <span>Pitch</span>
-          <input class="row-pitch" data-row="${index}" type="range" min="-24" max="24" value="0" />
-        </label>
-        <label class="knob-control">
-          <span>Send</span>
-          <input class="row-send" data-row="${index}" type="range" min="0" max="100" value="${Math.round(state.rows[index].send * 100)}" />
+          <span>Color</span>
+          <input class="row-color" data-row="${index}" type="range" min="0" max="100" value="${Math.round(state.rows[index].color * 100)}" />
         </label>
         <div class="toggle-row">
           <button class="toggle-button mute-button" data-mute-row="${index}">Mute</button>
-          <span>Sample</span>
+          <span>Slot</span>
           <button class="toggle-button slot-button active" data-slot-row="${index}" data-slot="a">A</button>
           <button class="toggle-button slot-button" data-slot-row="${index}" data-slot="b">B</button>
         </div>
@@ -572,10 +684,40 @@ function renderPlayhead(step) {
 function renderSelection() {
   const { row, col } = state.selected;
   const cellState = state.board[row][col].state;
+  const rowState = state.rows[row];
+  const slot = rowState.slot;
   refs.selectedReadout.textContent = `${ROWS[row].label} · Col ${col + 1}`;
+  refs.soundReadout.textContent = `${ROWS[row].label} · Slot ${slot.toUpperCase()} ${rowState.sampleNames[slot]}`;
 
   $$(".state-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.state === cellState);
+  });
+
+  refs.rowGain.value = String(Math.round(rowState.gain * 100));
+  refs.rowDrive.value = String(Math.round(rowState.drive * 100));
+  refs.rowTone.value = String(Math.round(rowState.tone * 100));
+  refs.rowDecay.value = String(Math.round(rowState.decay * 100));
+  refs.rowPan.value = String(Math.round(rowState.pan * 100));
+  refs.rowPitchDetail.value = String(rowState.pitch);
+  refs.rowSendDetail.value = String(Math.round(rowState.send * 100));
+  refs.rowGainValue.textContent = `${Math.round(rowState.gain * 100)}%`;
+  refs.rowDriveValue.textContent = `${Math.round(rowState.drive * 100)}%`;
+  refs.rowToneValue.textContent = `${Math.round(rowState.tone * 100)}%`;
+  refs.rowDecayValue.textContent = `${Math.round(rowState.decay * 100)}%`;
+  refs.rowPanValue.textContent = rowState.pan === 0 ? "C" : `${rowState.pan > 0 ? "R" : "L"}${Math.abs(Math.round(rowState.pan * 100))}`;
+  refs.rowPitchValue.textContent = rowState.pitch === 0 ? "0" : `${rowState.pitch > 0 ? "+" : ""}${rowState.pitch}`;
+  refs.rowSendValue.textContent = `${Math.round(rowState.send * 100)}%`;
+
+  refs.cellPanel.classList.toggle("hidden", state.inspectorTab !== "cell");
+  refs.soundPanel.classList.toggle("hidden", state.inspectorTab !== "sound");
+  $$("[data-inspector-tab]").forEach((btn) => {
+    const active = btn.dataset.inspectorTab === state.inspectorTab;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+
+  $$("[data-row]").forEach((strip) => {
+    strip.classList.toggle("selected-row", Number(strip.dataset.row) === row);
   });
 }
 
@@ -654,6 +796,19 @@ function bindEvents() {
     });
   });
 
+  $$("[data-inspector-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.inspectorTab = btn.dataset.inspectorTab;
+      renderSelection();
+    });
+  });
+
+  $$(".sound-control input").forEach((input) => {
+    input.addEventListener("input", () => {
+      setSelectedRowParam(input.dataset.soundParam, Number(input.value));
+    });
+  });
+
   refs.playBtn.addEventListener("click", togglePlayback);
   refs.bigPlayBtn.addEventListener("click", togglePlayback);
   refs.stopBtn.addEventListener("click", stopAndReset);
@@ -703,15 +858,24 @@ function bindEvents() {
     if (target.classList.contains("row-volume")) {
       state.rows[Number(target.dataset.row)].volume = Number(target.value) / 100;
     }
-    if (target.classList.contains("row-pitch")) {
-      state.rows[Number(target.dataset.row)].pitch = Number(target.value);
+    if (target.classList.contains("row-color")) {
+      state.rows[Number(target.dataset.row)].color = Number(target.value) / 100;
     }
-    if (target.classList.contains("row-send")) {
-      state.rows[Number(target.dataset.row)].send = Number(target.value) / 100;
-    }
+    renderSelection();
   });
 
   refs.channelStrips.addEventListener("click", (evt) => {
+    const strip = evt.target.closest("[data-row]");
+    if (strip && !evt.target.closest("button, input")) {
+      const row = Number(strip.dataset.row);
+      state.selected = { row, col: state.selected.col };
+      state.inspectorTab = "sound";
+      renderBoard();
+      renderSelection();
+      setMessage(`${ROWS[row].label} sound controls selected.`);
+      return;
+    }
+
     const mute = evt.target.closest("[data-mute-row]");
     if (mute) {
       const row = Number(mute.dataset.muteRow);
@@ -729,9 +893,23 @@ function bindEvents() {
       refs.channelStrips
         .querySelectorAll(`[data-slot-row="${row}"]`)
         .forEach((btn) => btn.classList.toggle("active", btn.dataset.slot === slot.dataset.slot));
+      renderSelection();
       setMessage(`${ROWS[row].label} using sample slot ${slot.dataset.slot.toUpperCase()}.`);
     }
   });
+}
+
+function setSelectedRowParam(param, value) {
+  const row = state.selected.row;
+  const rowState = state.rows[row];
+  if (param === "gain") rowState.gain = value / 100;
+  if (param === "drive") rowState.drive = value / 100;
+  if (param === "tone") rowState.tone = value / 100;
+  if (param === "decay") rowState.decay = value / 100;
+  if (param === "pan") rowState.pan = value / 100;
+  if (param === "pitch") rowState.pitch = value;
+  if (param === "send") rowState.send = value / 100;
+  renderSelection();
 }
 
 function startDrag(data) {
