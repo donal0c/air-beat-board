@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Air Beat Board</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" aria-label="Global controls">
+      <div class="brand-lockup">
+        <div>
+          <span class="eyebrow">Magnetic sequencer</span>
+          <h1>Air Beat Board</h1>
+        </div>
+        <span id="runtimeStatus" class="status-pill ready">Ready</span>
+      </div>
+
+      <div class="transport-strip">
+        <button id="playBtn" class="icon-command primary" data-testid="play-toggle" aria-label="Play or stop">
+          <span id="playIcon">▶</span>
+        </button>
+        <button id="stopBtn" class="icon-command" aria-label="Reset playhead">■</button>
+
+        <label class="value-control">
+          <span>BPM</span>
+          <input id="bpmInput" type="number" min="70" max="180" value="128" />
+        </label>
+
+        <label class="value-control compact">
+          <span>Swing</span>
+          <input id="swingInput" type="range" min="0" max="72" value="56" />
+          <strong id="swingReadout">56%</strong>
+        </label>
+
+        <label class="value-control">
+          <span>Length</span>
+          <select id="lengthSelect" aria-label="Pattern length">
+            <option value="16" selected>16</option>
+            <option value="14">14</option>
+            <option value="12">12</option>
+            <option value="10">10</option>
+            <option value="8">8</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+
+        <label class="value-control">
+          <span>Kit</span>
+          <select id="kitSelect" aria-label="Kit selector">
+            <option value="warm">Warm Studio</option>
+            <option value="lofi">Lo-Fi Room</option>
+            <option value="club">Club Utility</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="master-strip">
+        <div class="meter-block" aria-hidden="true">
+          <span class="meter-bar"><i id="masterMeter"></i></span>
+          <span class="meter-bar ghost"><i></i></span>
+        </div>
+        <label class="master-volume">
+          <span>Master</span>
+          <input id="masterInput" type="range" min="0" max="100" value="82" />
+        </label>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="camera-panel" aria-label="Camera and hand tracking">
+        <div class="panel-title">
+          <div>
+            <span>Camera & hand tracking</span>
+            <strong id="cameraMode">Manual mode</strong>
+          </div>
+          <button id="cameraBtn" class="small-command" data-testid="camera-toggle">Start camera</button>
+        </div>
+
+        <div class="camera-stage">
+          <video id="webcam" autoplay playsinline muted></video>
+          <canvas id="handOverlay"></canvas>
+          <div id="cameraFallback" class="camera-fallback">
+            <span>Manual-first instrument</span>
+            <strong>Camera optional</strong>
+            <p>Start camera to control the board with hand tracking.</p>
+          </div>
+          <div id="leftCursor" class="hand-cursor left">L</div>
+          <div id="rightCursor" class="hand-cursor right">R</div>
+        </div>
+
+        <div class="tracking-readouts">
+          <div>
+            <span>Left hand</span>
+            <strong id="leftConfidence">not visible</strong>
+          </div>
+          <div>
+            <span>Right hand</span>
+            <strong id="rightConfidence">not visible</strong>
+          </div>
+        </div>
+
+        <div class="gesture-legend">
+          <div><span>Open hand</span><strong>Move cursor</strong></div>
+          <div><span>Pinch</span><strong>Grab / place</strong></div>
+          <div><span>Fist</span><strong>Flip token</strong></div>
+          <div><span>No camera</span><strong>Mouse works</strong></div>
+        </div>
+
+        <section class="left-actions">
+          <div class="section-head"><span>Sample import</span><strong id="sampleStatus">Built-in kit</strong></div>
+          <div class="sample-actions">
+            <button id="importBtn" class="sample-action">Import audio</button>
+            <button id="randomizeBtn" class="sample-action">Seed pattern</button>
+            <button id="undoBtn" class="sample-action">Undo</button>
+          </div>
+          <input id="sampleInput" type="file" accept="audio/*" hidden />
+        </section>
+
+        <div id="message" class="message-panel">Click cells to compose. Press play when the board looks alive.</div>
+      </section>
+
+      <section class="instrument-panel" aria-label="Air Beat Board instrument">
+        <div class="board-shell">
+          <div class="board-surface" id="boardSurface">
+            <div class="board-top-details" aria-hidden="true">
+              <div class="brand-mark">ABB</div>
+              <div class="speaker-grille">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <div class="board-leds"><span></span><span></span></div>
+            </div>
+
+            <div class="grid-area">
+              <div class="row-labels" id="rowLabels"></div>
+              <div class="grid-frame">
+                <div class="step-numbers" aria-hidden="true">
+                  <span>1</span><span>2</span><span>3</span><span>4</span>
+                  <span>5</span><span>6</span><span>7</span><span>8</span>
+                </div>
+                <div id="beatGrid" class="beat-grid" data-testid="beat-grid"></div>
+              </div>
+            </div>
+
+            <div class="board-bottom-controls">
+              <button id="bigPlayBtn" class="wood-knob transport-knob" aria-label="Play">
+                <span>▶</span>
+              </button>
+              <div class="mini-controls">
+                <label><span>Swing</span><input id="boardSwing" type="range" min="0" max="72" value="56" /></label>
+                <label><span>Len</span><input id="boardLength" type="range" min="6" max="16" step="2" value="16" /></label>
+              </div>
+              <button id="clearBtn" class="wood-button danger">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-dock">
+          <section class="dock-section token-dock">
+            <div class="section-head"><span>Beat tokens</span><strong id="tokenCount">30 tokens</strong></div>
+            <div id="tokenTray" class="token-tray" aria-label="Beat token tray"></div>
+          </section>
+
+          <section class="dock-section state-dock">
+            <div class="section-head"><span>Cell state</span><strong id="selectedReadout">Row 1 · Col 1</strong></div>
+            <div class="state-buttons">
+              <button class="state-btn" data-state="empty">Empty</button>
+              <button class="state-btn active" data-state="first">First<br><small>1/16</small></button>
+              <button class="state-btn" data-state="second">Second<br><small>2/16</small></button>
+              <button class="state-btn" data-state="both">Both<br><small>1 + 2</small></button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <aside class="channel-panel" aria-label="Channel strips">
+        <div class="panel-title channel-title">
+          <div>
+            <span>Row strips</span>
+            <strong>5 sample channels</strong>
+          </div>
+        </div>
+        <div id="channelStrips" class="channel-strips"></div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
