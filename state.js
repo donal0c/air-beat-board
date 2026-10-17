@@ -60,6 +60,50 @@ const makeRowState = () => ({
   sampleNames: { a: "built-in", b: "empty" }
 });
 
+/**
+ * @typedef {"empty" | "first" | "second" | "both"} CellState
+ * @typedef {{ state: CellState }} Cell
+ * @typedef {Cell[][]} Board  5 rows x 8 columns
+ *
+ * @typedef {object} RowState
+ * @property {number} volume   0..1 channel level (the only level control)
+ * @property {number} pitch    semitones, -24..24
+ * @property {number} send     0..1 delay send
+ * @property {number} drive    0..1 waveshaper amount
+ * @property {number} tone     0..1 low-pass position
+ * @property {number} decay    0.25..1.5 envelope scale
+ * @property {number} pan      -1..1
+ * @property {number} color    0..1 strip "Color" knob, shifts tone
+ * @property {boolean} muted
+ * @property {boolean} solo
+ * @property {boolean} choke   a new hit cuts the previous one
+ * @property {"a" | "b"} slot  active sample slot
+ * @property {{ a: AudioBuffer | null, b: AudioBuffer | null }} samples
+ * @property {{ a: string, b: string }} sampleNames
+ *
+ * @typedef {{ board: Board, groove: string, length: number } | null} Slot
+ *
+ * @typedef {object} AppState
+ * @property {Board} board
+ * @property {{ row: number, col: number }} selected
+ * @property {boolean} playing
+ * @property {number} currentStep   -1 when stopped, else 0..length-1
+ * @property {number} bpm           70..180
+ * @property {number} swing         0..0.72 (0.5 is straight)
+ * @property {number} length        sixteenths per loop, 6..16 even
+ * @property {string} kit           key into KITS
+ * @property {string} groove        id of the last loaded groove
+ * @property {number} master        0..1
+ * @property {"cell" | "sound"} inspectorTab
+ * @property {RowState[]} rows
+ * @property {Slot[]} slots         A to D; the active slot's content is the live board
+ * @property {number} activeSlot
+ * @property {number | null} pendingSlot
+ * @property {{ text: string, undo: boolean }} message
+ * @property {string} sampleStatus
+ */
+
+/** @type {AppState} */
 export const state = {
   board: makeEmptyBoard(),
   selected: { row: 0, col: 0 },

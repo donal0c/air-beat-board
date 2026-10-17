@@ -8,6 +8,8 @@ import { state, DEFAULT_SOUND, clamp, lerp, closeTo } from "../state.js";
 import { KITS } from "./kits.js";
 
 const CURVE_SAMPLES = 256;
+/** No voice, procedural or sampled, may ring past this many seconds. */
+const MAX_VOICE_S = 2;
 const curveCache = new Map();
 
 /** Waveshaper curve for a drive amount, cached per rounded amount. */
@@ -38,8 +40,32 @@ function usesNeutralSoundPath(rowState) {
 }
 
 /**
+ * @typedef {object} Engine  The slice of AirBeatAudio a voice needs.
+ * @property {AudioContext} ac
+ * @property {GainNode} master       dry bus
+ * @property {DelayNode} delay       send bus
+ * @property {AudioBuffer} noiseBuffer
+ */
+
+/**
+ * @callback Voice
+ * @param {Engine} engine
+ * @param {number} row      row index, used to read the row's sound params
+ * @param {number} t        AudioContext time to fire at
+ * @param {number} volume   0..1.4, already includes the kit lift
+ * @param {number} pitch    semitones, -24..24
+ * @param {number} send     0..1 effect send
+ * @returns {GainNode}      the envelope node, so the engine can choke it
+ */
+
+/**
  * Build the per-hit output chain (drive, tone, pan, send) and return the
  * node a voice should connect into.
+ * @param {Engine} engine
+ * @param {number} row
+ * @param {number} gainValue
+ * @param {number} sendValue
+ * @returns {GainNode}
  */
 function voiceOutput(engine, row, gainValue, sendValue) {
   const { ac, master, delay } = engine;
@@ -111,7 +137,7 @@ function sample(engine, row, t, buffer, volume, pitch, send) {
   const out = voiceOutput(engine, row, 1, send);
   src.connect(env).connect(out);
   src.start(t);
-  src.stop(t + Math.min(buffer.duration / src.playbackRate.value, 1.4 * rowState.decay));
+  src.stop(t + Math.min(buffer.duration / src.playbackRate.value, 1.4 * rowState.decay, MAX_VOICE_S));
   return env;
 }
 
@@ -217,6 +243,7 @@ function bass(engine, row, t, volume, pitch, send) {
   return gain;
 }
 
+/** @type {Voice[]} one per row: kick, snare, hat, perc, bass */
 const PROCEDURAL = [kick, snare, hat, perc, bass];
 
 /**

@@ -12,6 +12,7 @@
     "serve": "python3 -m http.server 4174"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.49.0",
     "vitest": "^2.1.8"
   }

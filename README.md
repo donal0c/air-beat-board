@@ -10,6 +10,8 @@ The app is deliberately static: no framework, no package manager, no build step.
 
 ![Air Beat Board playable board detail](assets/screenshots/instrument-panel.png)
 
+![Air Beat Board on a phone](assets/screenshots/phone.png)
+
 ## What It Does
 
 - Creates a 5-channel beat board with 8 visible columns.
@@ -49,6 +51,21 @@ empty -> first -> second -> both -> empty
 ```
 
 You can also select a cell and use the Cell State buttons to set the state directly.
+
+Drag a token (from the tray or another cell) to move it; a press that moves less than 6px is a click, so tapping a token still cycles the cell. Dropping a token onto a filled cell stacks it into "both".
+
+Keyboard:
+
+| Key | Action |
+| --- | --- |
+| Space / Esc | Play or pause / stop and reset |
+| Arrow keys | Move the selected cell |
+| 1 2 3 4 | Set the selected cell to empty, first, second, both |
+| Backspace | Clear the selected cell |
+| M / S | Mute / solo the selected row |
+| Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z | Undo / redo |
+
+Grooves, pattern slots and the session live in the left panel: pick a groove to replace the board (undoable), Mutate to nudge it, Dup to copy the live board into the next free slot, and pick a slot while playing to launch it on the next bar. The session autosaves; Export and Import move it between browsers as JSON.
 
 ## Audio Engine
 
@@ -96,7 +113,11 @@ Recommended:
 ```text
 .
 ├── index.html
-├── style.css
+├── css/
+│   ├── base.css      tokens, reset, app shell, top bar, transport
+│   ├── board.css     the wooden board, grid, cells, tokens, playhead
+│   ├── panels.css    session panel, tray, inspector, channel strips
+│   └── responsive.css breakpoints and motion preferences
 ├── app.js            entry: DOM refs, wiring, meter loop
 ├── state.js          store, constants, notify/subscribe
 ├── actions.js        every user-level operation (the only state writers)
@@ -145,8 +166,14 @@ The app has no install or build step. The test tooling is the only thing
 npm install
 npm run check      # node --check on every app module
 npm test           # Vitest unit tests (state, grooves, history, storage, actions)
-npm run test:e2e   # Playwright smoke test against a local http.server
+npm run test:e2e   # Playwright smoke test and axe accessibility audit
 ```
+
+Two helper scripts exist for stylesheet work: `scripts/style-snapshot.mjs`
+records the computed style of every element at three widths, and
+`scripts/style-diff.mjs` compares two recordings, so a CSS refactor can be
+proven not to change the rendered result. `scripts/screenshots.mjs` retakes
+the README images.
 
 The first `test:e2e` run needs `npx playwright install chromium`. The same
 three commands run in GitHub Actions on every push and pull request.

@@ -1,0 +1,308 @@
+/* Air Beat Board: tokens, reset, app shell, top bar, transport and master. */
+
+:root {
+  color-scheme: dark;
+  --bg: #070808;
+  --panel: rgba(12, 14, 14, 0.82);
+  --panel-solid: #111313;
+  --panel-soft: rgba(22, 24, 22, 0.64);
+  --line: rgba(233, 218, 182, 0.16);
+  --line-strong: rgba(255, 209, 126, 0.46);
+  --text: #f5efe2;
+  --muted: #b9ad94;
+  --dim: #7d7566;
+  --cyan: #f0c46d;
+  --cyan-soft: rgba(240, 196, 109, 0.2);
+  --amber: #ffb43f;
+  --amber-soft: rgba(255, 180, 63, 0.18);
+  --green: #78ff86;
+  --red: #ff5b58;
+  --wood-1: #d7a66f;
+  --wood-2: #b67b43;
+  --wood-3: #7c4d2b;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.46);
+  /* Sizes. Breakpoints override these instead of restating rules. */
+  --board-pad: clamp(18px, 2.1vw, 30px);
+  --token-max: 50px;
+  --token-min: 30px;
+  --cell-min-h: 0px;
+  --touch-target: 44px;
+  --radius-panel: 10px;
+  --radius-card: 9px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100svh;
+  overflow: auto;
+  color: var(--text);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    radial-gradient(circle at 42% 0%, rgba(255, 177, 70, 0.16), transparent 42%),
+    radial-gradient(circle at 78% 92%, rgba(240, 196, 109, 0.1), transparent 38%),
+    linear-gradient(140deg, #050606 0%, #0b0d0c 48%, #050504 100%);
+  background-size: 36px 36px, 36px 36px, auto, auto, auto;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+  cursor: pointer;
+}
+
+input,
+select {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+input[type="range"] {
+  accent-color: #d69b43;
+}
+
+.app-shell {
+  width: min(1800px, 100vw);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 10px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+}
+
+.topbar {
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: minmax(270px, 0.85fr) minmax(620px, 1.72fr) minmax(220px, 0.62fr);
+  gap: 10px;
+}
+
+.brand-lockup,
+.transport-strip,
+.master-strip,
+.session-panel,
+.channel-panel,
+.dock-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background:
+    linear-gradient(180deg, rgba(255, 242, 206, 0.07), rgba(255, 255, 255, 0.018)),
+    var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 18px 46px rgba(0, 0, 0, 0.26);
+}
+
+.brand-lockup {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.eyebrow,
+.panel-title span,
+.section-head span,
+.value-control span,
+.master-volume span,
+.channel-meta span {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.69rem;
+  font-weight: 800;
+}
+
+h1 {
+  margin: 1px 0 0;
+  font-size: clamp(1.55rem, 2.2vw, 2.3rem);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.status-pill {
+  flex: none;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--green);
+  background: rgba(120, 255, 134, 0.08);
+}
+
+.status-pill.hot {
+  color: var(--amber);
+  background: rgba(255, 180, 63, 0.12);
+  border-color: rgba(255, 180, 63, 0.34);
+}
+
+.status-pill.warn {
+  color: #ffd66e;
+  background: rgba(255, 214, 110, 0.12);
+}
+
+.transport-strip {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 50px 42px minmax(82px, 0.8fr) minmax(190px, 1.2fr) minmax(92px, 0.75fr) minmax(160px, 1.1fr);
+  align-items: stretch;
+  gap: 8px;
+}
+
+.icon-command,
+.wood-button,
+.sample-action,
+.state-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015)),
+    rgba(9, 10, 10, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
+.icon-command {
+  min-width: 42px;
+  display: grid;
+  place-items: center;
+  font-size: 1.02rem;
+}
+
+.icon-command.primary {
+  border-color: rgba(240, 196, 109, 0.72);
+  color: #1b1006;
+  background: linear-gradient(180deg, #ffe0a1, #d99735 56%, #8a4e18);
+  box-shadow: 0 0 24px rgba(240, 196, 109, 0.22), inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.icon-command.primary.playing {
+  color: #140800;
+  border-color: rgba(255, 180, 63, 0.74);
+  background: linear-gradient(180deg, #ffe58c, #ffad35 52%, #d66d1f);
+  box-shadow: 0 0 24px rgba(255, 180, 63, 0.26), inset 0 -2px 0 rgba(0, 0, 0, 0.28);
+}
+
+.value-control,
+.master-volume {
+  min-width: 0;
+  padding: 6px 9px;
+  display: grid;
+  align-items: center;
+  gap: 4px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.value-control input[type="number"],
+.value-control select {
+  width: 100%;
+  height: 31px;
+  padding: 0 8px;
+  font-weight: 850;
+}
+
+.value-control.compact {
+  grid-template-columns: auto 1fr auto;
+  column-gap: 8px;
+}
+
+.value-control.compact span {
+  grid-column: 1 / -1;
+}
+
+.value-control strong {
+  color: var(--cyan);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.master-strip {
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: 55px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.meter-block {
+  height: 44px;
+  display: flex;
+  align-items: end;
+  gap: 6px;
+}
+
+.meter-bar {
+  width: 15px;
+  height: 42px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: end;
+}
+
+.meter-bar i {
+  width: 100%;
+  height: 24%;
+  background: linear-gradient(180deg, var(--green), var(--amber));
+  transition: height 120ms linear;
+}
+
+.meter-bar.ghost i {
+  height: 54%;
+  opacity: 0.48;
+}
+
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(245px, 0.5fr) minmax(700px, 2.2fr) minmax(235px, 0.48fr);
+  gap: 10px;
+}
+
+body.dragging {
+  cursor: grabbing;
+}
+
+.instrument-panel {
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(440px, 1fr) auto;
+  gap: 10px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.mute-button.muted {
+  color: #1b0303;
+  background: var(--red);
+  border-color: rgba(255, 91, 88, 0.72);
+}
+
+.solo-button.soloed {
+  color: #04200a;
+  background: var(--green);
+  border-color: rgba(120, 255, 134, 0.72);
+}

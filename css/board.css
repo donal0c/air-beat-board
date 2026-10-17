@@ -1,0 +1,488 @@
+/* Air Beat Board: the wooden board, grid, cells, tokens, playhead and drag. */
+
+.board-shell {
+  min-height: 0;
+  min-width: 0;
+  padding: 7px;
+  display: grid;
+  perspective: 1400px;
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 48% 10%, rgba(255, 188, 83, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.18));
+}
+
+.board-surface {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--board-pad);
+  display: grid;
+  grid-template-rows: 54px minmax(330px, 1fr) 74px;
+  gap: 14px;
+  border-radius: 18px;
+  overflow: hidden;
+  color: #2b1c0f;
+  background:
+    linear-gradient(90deg, rgba(84, 46, 17, 0.16) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(84, 46, 17, 0.09) 1px, transparent 1px),
+    radial-gradient(circle at 24% 18%, rgba(255, 245, 190, 0.32), transparent 30%),
+    linear-gradient(112deg, rgba(255, 255, 255, 0.16), transparent 42%),
+    url("../assets/maple-panel.png") center / cover,
+    linear-gradient(90deg, var(--wood-1), #d9ad74 24%, #c89154 52%, #e0b67d 77%, #b97b43);
+  background-size: 92px 100%, 100% 17px, auto, auto, cover, auto;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -22px 34px rgba(83, 44, 15, 0.22),
+    0 32px 70px rgba(0, 0, 0, 0.52);
+  transform: rotateX(1.5deg);
+}
+
+.board-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(2deg, transparent 0 16px, rgba(87, 47, 18, 0.045) 16px 17px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 16%, transparent 82%, rgba(49, 24, 8, 0.14));
+  mix-blend-mode: multiply;
+}
+
+.board-top-details,
+.board-bottom-controls,
+.grid-area {
+  position: relative;
+  z-index: 2;
+}
+
+.board-top-details {
+  display: grid;
+  grid-template-columns: 96px 1fr 76px;
+  align-items: start;
+}
+
+.brand-mark {
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  color: rgba(42, 25, 11, 0.68);
+}
+
+.speaker-grille {
+  justify-self: center;
+  width: min(230px, 38%);
+  display: grid;
+  grid-template-columns: repeat(8, 5px);
+  gap: 8px;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.speaker-grille i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(36, 21, 10, 0.74);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.board-leds {
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+}
+
+.board-leds span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 12px var(--amber);
+}
+
+.board-leds span:last-child {
+  background: rgba(35, 20, 9, 0.36);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.38);
+}
+
+.grid-area {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 116px 1fr;
+  gap: 12px;
+  align-self: center;
+}
+
+.row-labels {
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  padding-top: 27px;
+  gap: 0;
+}
+
+.row-label {
+  display: grid;
+  grid-template-columns: 18px 12px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+  font-weight: 900;
+  color: rgba(38, 22, 8, 0.82);
+  border-bottom: 1px solid rgba(45, 24, 9, 0.22);
+}
+
+.row-label strong {
+  text-align: right;
+}
+
+.row-label em {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.row-label span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(36, 20, 8, 0.28);
+}
+
+.row-label.active span {
+  background: var(--amber);
+  box-shadow: 0 0 14px var(--amber);
+}
+
+.grid-frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: 26px 1fr;
+  align-self: center;
+  min-width: 0;
+  aspect-ratio: 8 / 5;
+  max-height: 100%;
+  border-radius: 12px;
+}
+
+.step-numbers {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  text-align: center;
+  color: rgba(43, 25, 10, 0.72);
+  font-weight: 850;
+  font-size: 0.82rem;
+}
+
+.beat-grid {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(5, 1fr);
+  min-height: 0;
+  border: 2px solid rgba(34, 19, 8, 0.55);
+  border-radius: 11px;
+  overflow: hidden;
+  background: rgba(255, 228, 166, 0.1);
+  box-shadow: inset 0 2px 10px rgba(42, 23, 8, 0.16), 0 11px 18px rgba(87, 44, 16, 0.12);
+}
+
+.cell {
+  position: relative;
+  min-height: var(--cell-min-h);
+  container-type: size;
+  border-right: 1px solid rgba(31, 18, 8, 0.5);
+  border-bottom: 1px solid rgba(31, 18, 8, 0.5);
+  background: rgba(255, 255, 255, 0.025);
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.cell:nth-of-type(8n) {
+  border-right: 0;
+}
+
+.cell:nth-of-type(n + 33) {
+  border-bottom: 0;
+}
+
+.cell {
+  outline: none;
+}
+
+/* Brass inset ring: the selected cell and the keyboard focus ring share it. */
+.cell.selected,
+.cell:focus-visible {
+  background: rgba(255, 214, 140, 0.12);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 70, 0.88),
+    inset 0 0 0 3px rgba(70, 36, 10, 0.55),
+    inset 0 0 18px rgba(255, 180, 63, 0.18);
+}
+
+.cell.selected > .token,
+.cell:focus-visible > .token {
+  transform: translate(-50%, -54%) scale(1.06);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.3),
+    inset 0 -6px 12px rgba(30, 14, 4, 0.32),
+    0 14px 16px rgba(40, 20, 8, 0.4);
+}
+
+.cell.play-col {
+  background: rgba(120, 52, 8, 0.07);
+}
+
+/* Hit cells: a deep-orange ring. Amber alone vanishes on light maple, so the
+   ring is darker than the wood and backed by a thin burnt edge. */
+.cell.play-hit {
+  box-shadow:
+    inset 0 0 0 2px rgba(236, 110, 22, 0.95),
+    inset 0 0 0 3px rgba(80, 34, 6, 0.6),
+    inset 0 0 22px rgba(236, 110, 22, 0.3);
+}
+
+.cell.play-hit.selected {
+  box-shadow:
+    inset 0 0 0 2px rgba(236, 110, 22, 0.98),
+    inset 0 0 0 3px rgba(80, 34, 6, 0.7),
+    inset 0 0 26px rgba(236, 110, 22, 0.4);
+}
+
+.cell.play-hit > .token {
+  animation: token-press 140ms ease-out;
+}
+
+@keyframes token-press {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  35% { transform: translate(-50%, -47%) scale(0.9); filter: brightness(1.18); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.cell.selected.play-hit > .token {
+  animation-name: token-press-selected;
+}
+
+@keyframes token-press-selected {
+  0% { transform: translate(-50%, -54%) scale(1.06); }
+  35% { transform: translate(-50%, -50%) scale(0.96); filter: brightness(1.18); }
+  100% { transform: translate(-50%, -54%) scale(1.06); }
+}
+
+/* Columns beyond the loop length: darker wood with a faint grain hatch. */
+.cell.outside-length {
+  background:
+    repeating-linear-gradient(135deg, rgba(20, 12, 5, 0.14) 0 3px, transparent 3px 10px),
+    rgba(28, 20, 13, 0.46);
+}
+
+.cell.outside-length > .token {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.cell.outside-length.selected {
+  background:
+    repeating-linear-gradient(135deg, rgba(20, 12, 5, 0.14) 0 3px, transparent 3px 10px),
+    rgba(40, 28, 16, 0.46);
+}
+
+/* The playhead: an amber light column that sweeps the grid, driven from the
+   audio clock. Sits under the cells so tokens stay crisp above it. */
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 12.5%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, rgba(236, 110, 22, 0.3), rgba(160, 70, 12, 0.14) 45%, rgba(120, 52, 8, 0.05));
+  box-shadow:
+    inset 3px 0 0 rgba(255, 128, 24, 1),
+    inset 4px 0 0 rgba(70, 28, 4, 0.75),
+    inset -1px 0 0 rgba(70, 28, 4, 0.25),
+    0 0 26px rgba(236, 110, 22, 0.45);
+  transition: transform 60ms linear, opacity 180ms ease;
+}
+
+.beat-grid.playing .playhead {
+  opacity: 1;
+}
+
+.step-numbers span {
+  transition: color 120ms ease, text-shadow 120ms ease, opacity 120ms ease;
+}
+
+.step-numbers span.active {
+  color: #c24f00;
+  text-shadow: 0 0 10px rgba(255, 140, 40, 0.8), 0 0 2px rgba(255, 200, 120, 0.9);
+}
+
+.step-numbers span.outside {
+  opacity: 0.38;
+}
+
+.row-label.selected {
+  color: #5c3209;
+}
+
+.row-label.selected strong {
+  color: #8a4a0f;
+  text-shadow: 0 0 8px rgba(255, 180, 63, 0.55);
+}
+
+.token {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(58cqw, 72cqh, var(--token-max));
+  min-width: var(--token-min);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(31, 18, 8, 0.68);
+  background:
+    linear-gradient(90deg, rgba(55, 31, 12, 0.18) 1px, transparent 1px),
+    radial-gradient(circle at 30% 22%, rgba(255, 235, 177, 0.5), transparent 27%),
+    linear-gradient(135deg, #c3935b, #80502b 78%);
+  background-size: 13px 100%, auto, auto;
+  box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.28), inset 0 -6px 12px rgba(30, 14, 4, 0.32), 0 10px 12px rgba(40, 20, 8, 0.32);
+  transition: transform 140ms ease, filter 140ms ease;
+}
+
+.token::after {
+  content: "";
+  position: absolute;
+  right: 18%;
+  top: 18%;
+  width: 21%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(42, 24, 9, 0.44);
+  transform: rotate(-20deg);
+}
+
+.token.second {
+  filter: brightness(0.62) saturate(0.86);
+  background:
+    linear-gradient(90deg, rgba(255, 226, 159, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 70% 78%, rgba(255, 214, 135, 0.22), transparent 26%),
+    linear-gradient(135deg, #3b3128, #151411 82%);
+}
+
+.token.both::before {
+  content: "";
+  position: absolute;
+  inset: -9px 7px 9px -7px;
+  z-index: -1;
+  border-radius: 50%;
+  border: 1px solid rgba(31, 18, 8, 0.6);
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 236, 183, 0.44), transparent 28%),
+    linear-gradient(135deg, #cda06a, #704627 74%);
+  box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.24), 0 6px 10px rgba(34, 17, 5, 0.24);
+}
+
+.token.ghost-token {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  width: 50px;
+  min-width: 0;
+}
+
+.token.ghost-token:hover {
+  transform: translateY(-3px);
+}
+
+.board-bottom-controls {
+  display: grid;
+  grid-template-columns: 78px 1fr 86px;
+  gap: 18px;
+  align-items: center;
+}
+
+.wood-knob {
+  position: relative;
+  border: 1px solid rgba(34, 18, 7, 0.66);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 238, 185, 0.32), transparent 26%),
+    linear-gradient(135deg, #4b2f1d, #1b1711 74%);
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.18), inset 0 -8px 12px rgba(0, 0, 0, 0.4), 0 14px 20px rgba(42, 19, 6, 0.24);
+}
+
+.transport-knob {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  color: var(--amber);
+  font-size: 1.08rem;
+}
+
+.mini-controls {
+  display: flex;
+  align-items: end;
+  gap: 18px;
+}
+
+.mini-controls label {
+  min-width: 120px;
+  display: grid;
+  gap: 5px;
+  color: rgba(43, 25, 10, 0.78);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.wood-button {
+  justify-self: end;
+  width: min(100%, 86px);
+  min-height: 42px;
+  padding: 0 14px;
+  color: #2a1808;
+  border-color: rgba(44, 25, 9, 0.38);
+  background: linear-gradient(180deg, rgba(255, 229, 174, 0.64), rgba(191, 127, 62, 0.42));
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.wood-button.danger {
+  color: #50120c;
+}
+
+.drag-proxy {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  width: 54px;
+  height: 54px;
+}
+
+.drag-proxy .token {
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  width: 54px;
+}
+
+.cell.drop-target {
+  background: rgba(255, 255, 255, 0.1);
+  outline: 2px dashed rgba(236, 110, 22, 0.95);
+  outline-offset: -5px;
+}
+
+/* Cells always carry a token element; an empty cell simply hides it so the
+   grid can be patched in place instead of rebuilt. */
+.cell > .token.empty {
+  display: none;
+}

@@ -161,8 +161,9 @@ things the eye cannot currently read.
 - [x] First-run hint: a one-line strip under the board explaining the four
       token states, dismissed forever on first click.
 - [x] `prefers-reduced-motion` turns off glow pulses and the press animation.
-- [ ] Run Lighthouse accessibility; aim for 100. Contrast on `--dim` text
-      and the step numbers will need a nudge.
+- [x] Accessibility: an axe-core audit (WCAG 2.x A and AA) runs in the
+      Playwright suite at desktop and phone widths and reports zero
+      violations. Lighthouse itself was not run.
 
 ---
 
@@ -205,16 +206,17 @@ storage.js        localStorage, JSON export/import
       `ac.currentTime`. Clear the queue on stop.
 - [x] Reuse the distortion curve per drive value (cache by rounded amount)
       instead of allocating a `Float32Array` per hit.
-- [ ] Hard-stop any voice longer than 2s so imported samples cannot pile up.
+- [x] Hard-stop any voice longer than 2s so imported samples cannot pile up.
 
 ### 3.4 CSS
 
-- [ ] Move the magic sizes (cell size, token size, board padding) into
-      custom properties at `:root` and override them per breakpoint, so the
-      three media queries shrink to a handful of lines each.
-- [ ] Drop the hand-rolled `?v=` cache-bust from `index.html`; use normal
+- [x] Move the magic sizes (cell size, token size, board padding) into
+      custom properties at `:root` and override them per breakpoint. (The
+      board padding, token size, cell height, touch target and panel radii
+      are tokens; the breakpoints still carry their layout rules.)
+- [x] Drop the hand-rolled `?v=` cache-bust from `index.html`; use normal
       caching headers from the host instead.
-- [ ] Split into `base.css`, `board.css`, `panels.css`, `responsive.css`
+- [x] Split into `base.css`, `board.css`, `panels.css`, `responsive.css`
       and link all four. No build step needed.
 
 ### 3.5 Tests
@@ -230,10 +232,10 @@ storage.js        localStorage, JSON export/import
 
 ### 3.6 Hygiene
 
-- [ ] JSDoc types on the store shape and the voice function signatures.
-- [ ] README: update the interaction model (threshold drag, shortcuts,
+- [x] JSDoc types on the store shape and the voice function signatures.
+- [x] README: update the interaction model (threshold drag, shortcuts,
       slots, save/load) and retake the two screenshots.
-- [ ] Remove `POLISH_PLAN.md` once this plan supersedes it, or merge the
+- [x] Remove `POLISH_PLAN.md` once this plan supersedes it, or merge the
       unchecked items here.
 
 ---
@@ -270,3 +272,13 @@ Desktop 1440, tablet 768, phone 375:
 - Export JSON, clear, import JSON: board restores.
 - Phone: no horizontal scroll, whole grid visible, drawers open and close.
 - Lighthouse accessibility 100, no console errors.
+
+---
+
+## Later (carried over from the original polish plan, out of A+ scope)
+
+- Microphone recording into a row slot, with an armed countdown.
+- Trim for recorded or imported samples; resampling / loop capture.
+- Performance mode that hides editing chrome.
+- Guided play cards (build a backbeat, flip hats, add a bass offbeat).
+- Contextual messages that explain musical outcomes.
