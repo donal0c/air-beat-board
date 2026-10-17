@@ -185,23 +185,24 @@ ui/keyboard.js    shortcuts and roving focus
 storage.js        localStorage, JSON export/import
 ```
 
-- [ ] Every UI module takes `refs` and `store` as arguments; no module reads
+- [x] Every UI module takes `refs` and `store` as arguments; no module reads
       `document` globals at import time.
-- [ ] `state.js` exposes `update(fn)` that mutates, pushes history when asked,
-      and notifies subscribers. All renders go through subscribers.
+- [x] `state.js` exposes `notify()`/`subscribe()`; `actions.js` is the only
+      writer and calls notify after each mutation. All renders go through
+      subscribers.
 
 ### 3.2 Render without rebuilding
 
-- [ ] Create the 40 cell buttons once. On state change, patch only the cells
+- [x] Create the 40 cell buttons once. On state change, patch only the cells
       whose state or selection changed (diff previous snapshot).
-- [ ] Row strips and inspector patch values, never `innerHTML`, after init.
+- [x] Row strips and inspector patch values, never `innerHTML`, after init.
 
 ### 3.3 Scheduler and visuals
 
 - [ ] Keep the lookahead scheduler. Replace per-step `setTimeout` visuals
       with a queue of `{ step, time }` drained in the rAF loop against
       `ac.currentTime`. Clear the queue on stop.
-- [ ] Reuse the distortion curve per drive value (cache by rounded amount)
+- [x] Reuse the distortion curve per drive value (cache by rounded amount)
       instead of allocating a `Float32Array` per hit.
 - [ ] Hard-stop any voice longer than 2s so imported samples cannot pile up.
 

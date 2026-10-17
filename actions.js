@@ -1,0 +1,227 @@
+// Every user-level operation lives here. UI modules call these; nothing
+// else writes to state. Each action mutates state, then calls notify().
+
+import {
+  state, ROWS, STATE_ORDER, BPM_MIN, BPM_MAX, SWING_MAX,
+  makeEmptyBoard, describeState, boardIsEmpty, clamp, notify
+} from "./state.js";
+import { pushHistory, popHistory } from "./history.js";
+import { KITS, patternFromKit } from "./audio/kits.js";
+import { AirBeatAudio } from "./audio/engine.js";
+
+export const audio = new AirBeatAudio();
+
+export function setMessage(text, options = {}) {
+  state.message = { text, undo: Boolean(options.undo) };
+  notify();
+}
+
+// ---------------------------------------------------------------- board
+
+export function setCell(row, col, value, options = {}) {
+  if (!state.board[row]?.[col]) return;
+  if (!options.skipHistory) pushHistory();
+  state.board[row][col].state = value;
+  state.selected = { row, col };
+  if (!options.silent) {
+    state.message = { text: `${ROWS[row].label} column ${col + 1}: ${describeState(value)}`, undo: false };
+  }
+  notify();
+}
+
+export function cycleCell(row, col) {
+  const current = state.board[row][col].state;
+  const next = STATE_ORDER[(STATE_ORDER.indexOf(current) + 1) % STATE_ORDER.length];
+  setCell(row, col, next);
+}
+
+export function selectCell(row, col) {
+  state.selected = { row, col };
+  notify();
+}
+
+export function selectRow(row) {
+  state.selected = { row, col: state.selected.col };
+  state.inspectorTab = "sound";
+  state.message = { text: `${ROWS[row].label} sound controls selected.`, undo: false };
+  notify();
+}
+
+/**
+ * Drop a dragged token. `source` is { type: "tray" } or
+ * { type: "cell", row, col }. Dropping a cell token on its own cell is a
+ * no-op and leaves history untouched.
+ */
+export function dropToken(source, tokenState, row, col) {
+  if (source.type === "cell" && source.row === row && source.col === col) return;
+
+  pushHistory();
+  if (source.type === "cell") {
+    state.board[source.row][source.col].state = "empty";
+  }
+  const existing = state.board[row][col].state;
+  state.board[row][col].state = existing === "empty" ? tokenState : "both";
+  state.selected = { row, col };
+  state.message = {
+    text: `${ROWS[row].label} column ${col + 1}: ${describeState(state.board[row][col].state)}.`,
+    undo: false
+  };
+  notify();
+}
+
+export function seedPattern(key = state.kit, options = {}) {
+  const replaced = !boardIsEmpty();
+  pushHistory();
+  state.board = patternFromKit(key);
+  if (!options.silent) {
+    state.message = replaced
+      ? { text: `${KITS[key].name} pattern replaced your board.`, undo: true }
+      : { text: `${KITS[key].name} pattern loaded.`, undo: false };
+  }
+  notify();
+}
+
+export function clearBoard() {
+  pushHistory();
+  state.board = makeEmptyBoard();
+  state.currentStep = -1;
+  state.message = { text: "Board cleared. Start with one token and let it loop.", undo: true };
+  notify();
+}
+
+export function undoBoard() {
+  const previous = popHistory();
+  if (!previous) {
+    setMessage("No board changes to undo.");
+    return;
+  }
+  state.board = previous;
+  state.message = { text: "Board change undone.", undo: false };
+  notify();
+}
+
+// ------------------------------------------------------------ transport
+
+export async function togglePlayback() {
+  if (state.playing) {
+    state.playing = false;
+    audio.pause();
+    state.message = { text: "Playback paused.", undo: false };
+    notify();
+    return;
+  }
+
+  state.playing = true;
+  state.message = { text: "Playback running. Move tokens while the loop plays.", undo: false };
+  notify();
+  await audio.play();
+}
+
+export function stopAndReset() {
+  state.playing = false;
+  state.currentStep = -1;
+  audio.pause();
+  audio.reset();
+  state.message = { text: "Playhead reset.", undo: false };
+  notify();
+}
+
+// -------------------------------------------------------------- globals
+
+export function setBpm(value) {
+  const parsed = Number(value);
+  const next = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : state.bpm;
+  state.bpm = clamp(next, BPM_MIN, BPM_MAX);
+  notify();
+}
+
+export function nudgeBpm(delta) {
+  setBpm(state.bpm + delta);
+}
+
+export function setSwing(percent) {
+  state.swing = clamp(Number(percent) / 100, 0, SWING_MAX);
+  notify();
+}
+
+export function setLength(value) {
+  state.length = Number(value);
+  notify();
+}
+
+/** Changing the kit only changes the sound. The board is kept. */
+export function setKit(key) {
+  if (!KITS[key]) return;
+  state.kit = key;
+  state.message = { text: `${KITS[key].name} kit. Board kept; use Seed pattern to load its groove.`, undo: false };
+  notify();
+}
+
+export function setMaster(percent) {
+  state.master = Number(percent) / 100;
+  audio.setMaster(state.master);
+  notify();
+}
+
+export function setInspectorTab(tab) {
+  state.inspectorTab = tab;
+  notify();
+}
+
+// ----------------------------------------------------------------- rows
+
+export function setSelectedRowParam(param, value) {
+  const rowState = state.rows[state.selected.row];
+  if (param === "gain") rowState.gain = value / 100;
+  else if (param === "drive") rowState.drive = value / 100;
+  else if (param === "tone") rowState.tone = value / 100;
+  else if (param === "decay") rowState.decay = value / 100;
+  else if (param === "pan") rowState.pan = value / 100;
+  else if (param === "pitch") rowState.pitch = value;
+  else if (param === "send") rowState.send = value / 100;
+  else return;
+  notify();
+}
+
+export function setRowVolume(row, percent) {
+  state.rows[row].volume = Number(percent) / 100;
+  notify();
+}
+
+export function setRowColor(row, percent) {
+  state.rows[row].color = Number(percent) / 100;
+  notify();
+}
+
+export function toggleMute(row) {
+  const rowState = state.rows[row];
+  rowState.muted = !rowState.muted;
+  state.message = { text: `${ROWS[row].label} ${rowState.muted ? "muted" : "back in"}.`, undo: false };
+  notify();
+}
+
+export function setSlot(row, slot) {
+  state.rows[row].slot = slot;
+  state.message = { text: `${ROWS[row].label} using sample slot ${slot.toUpperCase()}.`, undo: false };
+  notify();
+}
+
+export async function importSample(file) {
+  if (!file) return;
+  try {
+    await audio.ensure();
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = await audio.ac.decodeAudioData(arrayBuffer);
+    const row = state.selected.row;
+    const slot = state.rows[row].slot;
+    state.rows[row].samples[slot] = buffer;
+    state.rows[row].sampleNames[slot] = file.name;
+    state.sampleStatus = `${ROWS[row].label} ${slot.toUpperCase()}: ${file.name}`;
+    state.message = { text: `Imported ${file.name} into ${ROWS[row].label} slot ${slot.toUpperCase()}.`, undo: false };
+  } catch (error) {
+    console.error(error);
+    state.sampleStatus = "Import failed";
+    state.message = { text: "That audio file could not be decoded by the browser.", undo: false };
+  }
+  notify();
+}

@@ -93,7 +93,17 @@ Recommended:
 .
 ├── index.html
 ├── style.css
-├── app.js
+├── app.js            entry: DOM refs, wiring, meter loop
+├── state.js          store, constants, notify/subscribe
+├── actions.js        every user-level operation (the only state writers)
+├── history.js        undo stack
+├── audio/
+│   ├── engine.js     AudioContext, master bus, lookahead scheduler
+│   ├── voices.js     procedural voices and sample playback
+│   └── kits.js       kit names, seed patterns, voicing tweaks
+├── ui/
+│   ├── board.js      grid, row labels, tray, drag and drop, playhead
+│   └── panels.js     transport, session, inspector, channel strips
 └── assets/
     ├── maple-panel.png
     └── studio-desk.png
@@ -127,7 +137,7 @@ There is no install step.
 Useful checks:
 
 ```sh
-node --check app.js
+for f in app.js state.js actions.js history.js audio/*.js ui/*.js; do node --check "$f"; done
 ```
 
 Manual browser checks:
