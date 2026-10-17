@@ -82,6 +82,27 @@ export const state = {
   sampleStatus: "Built-in kit"
 };
 
+/** Put every field back to its first-load value. Used by tests and Fresh. */
+export function resetState() {
+  state.board = makeEmptyBoard();
+  state.selected = { row: 0, col: 0 };
+  state.playing = false;
+  state.currentStep = -1;
+  state.bpm = 128;
+  state.swing = 0.56;
+  state.length = MAX_STEPS;
+  state.kit = "warm";
+  state.groove = "backbeat";
+  state.master = 0.82;
+  state.inspectorTab = "cell";
+  state.rows = ROWS.map(makeRowState);
+  state.slots = [null, null, null, null];
+  state.activeSlot = 0;
+  state.pendingSlot = null;
+  state.message = { text: "", undo: false };
+  state.sampleStatus = "Built-in kit";
+}
+
 const listeners = new Set();
 
 /** Register a renderer. Returns an unsubscribe function. */

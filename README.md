@@ -138,22 +138,31 @@ Not included in this version:
 
 ## Development Notes
 
-There is no install step.
-
-Useful checks:
+The app has no install or build step. The test tooling is the only thing
+`npm install` brings in.
 
 ```sh
-for f in app.js state.js actions.js history.js audio/*.js ui/*.js; do node --check "$f"; done
+npm install
+npm run check      # node --check on every app module
+npm test           # Vitest unit tests (state, grooves, history, storage, actions)
+npm run test:e2e   # Playwright smoke test against a local http.server
 ```
+
+The first `test:e2e` run needs `npx playwright install chromium`. The same
+three commands run in GitHub Actions on every push and pull request.
 
 Manual browser checks:
 
 - Load the app over `localhost`.
-- Press play and confirm audio starts.
-- Click cells and confirm token states cycle correctly.
-- Confirm the playhead advances through 16 internal steps.
-- Change BPM, swing, length, kit, master level, row volume, row pitch, row send, mute, and sample slot controls.
+- Press play (or Space) and confirm audio starts and the playhead sweeps.
+- Click a cell four times and confirm it cycles empty, first, second, both.
+- Drag a tray token onto a cell, and a cell token onto another cell.
+- Change BPM, swing, length, kit, master level, and the row controls.
+- Load a groove, mutate it, undo, redo.
+- Switch pattern slots while playing and confirm the change lands on the bar.
 - Import a local audio file and assign it to a row slot.
+- Reload: the session comes back. Export, Fresh, Import: it comes back again.
+- Check the phone layout: board first, bottom transport, drawer tabs.
 
 ## Privacy
 

@@ -75,6 +75,13 @@ export function pushHistory({ coalesce = null } = {}) {
   future.length = 0;
 }
 
+/** Forget both stacks. Used by tests and when a session is replaced. */
+export function clearHistory() {
+  past.length = 0;
+  future.length = 0;
+  lastKey = null;
+}
+
 export function canUndo() {
   return past.length > 0;
 }

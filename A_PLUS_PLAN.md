@@ -219,14 +219,14 @@ storage.js        localStorage, JSON export/import
 
 ### 3.5 Tests
 
-- [ ] `tests/` with Vitest run via `npx vitest` (dev-only; still no build
+- [x] `tests/` with Vitest run via `npx vitest` (dev-only; still no build
       for the app itself).
-- [ ] Unit: `cellTriggersStep`, state cycling, history push/undo/redo,
+- [x] Unit: `cellTriggersStep`, state cycling, history push/undo/redo,
       snapshot round-trip, groove mutate invariants, swing offset maths.
-- [ ] Browser: one Playwright spec that loads the page, clicks a cell four
+- [x] Browser: one Playwright spec that loads the page, clicks a cell four
       times and asserts the four states, drags a token, presses Space and
       asserts the playhead moves. Reuse `.playwright-mcp` setup.
-- [ ] `npm test` and `node --check` in a tiny GitHub Actions workflow.
+- [x] `npm test` and `node --check` in a tiny GitHub Actions workflow.
 
 ### 3.6 Hygiene
 
