@@ -223,8 +223,7 @@ export function setInspectorTab(tab) {
 export function setSelectedRowParam(param, value) {
   const rowState = state.rows[state.selected.row];
   pushHistory({ coalesce: `row-${state.selected.row}-${param}` });
-  if (param === "gain") rowState.gain = value / 100;
-  else if (param === "drive") rowState.drive = value / 100;
+  if (param === "drive") rowState.drive = value / 100;
   else if (param === "tone") rowState.tone = value / 100;
   else if (param === "decay") rowState.decay = value / 100;
   else if (param === "pan") rowState.pan = value / 100;
@@ -251,6 +250,31 @@ export function toggleMute(row) {
   pushHistory();
   rowState.muted = !rowState.muted;
   state.message = { text: `${ROWS[row].label} ${rowState.muted ? "muted" : "back in"}.`, undo: false };
+  notify();
+}
+
+export function toggleSolo(row) {
+  const rowState = state.rows[row];
+  pushHistory();
+  rowState.solo = !rowState.solo;
+  const soloed = state.rows.map((r, i) => (r.solo ? ROWS[i].label : null)).filter(Boolean);
+  state.message = {
+    text: soloed.length ? `Solo: ${soloed.join(", ")}.` : `${ROWS[row].label} solo off. Everyone is back.`,
+    undo: false
+  };
+  notify();
+}
+
+export function toggleChoke(row) {
+  const rowState = state.rows[row];
+  pushHistory();
+  rowState.choke = !rowState.choke;
+  state.message = {
+    text: rowState.choke
+      ? `${ROWS[row].label} choke on: each hit cuts the one before it.`
+      : `${ROWS[row].label} choke off: hits ring out.`,
+    undo: false
+  };
   notify();
 }
 

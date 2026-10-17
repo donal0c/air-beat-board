@@ -88,16 +88,16 @@ The cells are already buttons, so this is cheap.
 
 ### 1.7 Clean up the two volume controls
 
-- [ ] Channel strip "Vol" is the one level control. Inspector "Gain" is
+- [x] Channel strip "Vol" is the one level control. Inspector "Gain" is
       removed; its slot in the Sound grid is taken by "Solo" and "Choke".
-- [ ] Solo on each strip alongside Mute, with the usual rule that any solo
+- [x] Solo on each strip alongside Mute, with the usual rule that any solo
       silences non-soloed rows.
 
 ### 1.8 Honest metering
 
-- [ ] Replace the counter-based meter with an `AnalyserNode` on the master
+- [x] Replace the counter-based meter with an `AnalyserNode` on the master
       bus and a cheap RMS read in the rAF loop.
-- [ ] Per-row hit flash in the channel strip driven from `scheduleStep`, so
+- [x] Per-row hit flash in the channel strip driven from `scheduleStep`, so
       the strips pulse with the beat.
 
 ### 1.9 Save / load / share

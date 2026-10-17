@@ -17,7 +17,7 @@ The app is deliberately static: no framework, no package manager, no build step.
 - Lets each cell be empty, first sub-step, second sub-step, or both sub-steps.
 - Plays a built-in procedural kit using WebAudio.
 - Supports local audio sample import with `decodeAudioData`.
-- Provides per-row controls for volume, pitch, effect send, mute, and A/B sample slot selection.
+- Provides per-row controls for volume, pitch, effect send, mute, solo, choke, and A/B sample slot selection.
 - Provides global controls for play/stop, BPM, swing, loop length, kit, and master level.
 - Ships six groove templates (Backbeat, House, Lo-Fi, Breakbeat, Minimal, Afro Swing) with Mutate, per-row Randomise and Reset.
 - Full undo/redo across the board, row settings and globals, plus keyboard shortcuts.
@@ -63,7 +63,7 @@ The audio engine includes:
 - Per-row volume.
 - Per-row pitch.
 - Per-row send into a delay-style effect return.
-- Master output level and simple metering.
+- Master output level with an analyser-driven meter and per-row hit flashes.
 - Local sample import for replacing row A/B slots.
 
 Audio starts only after a user action, such as pressing play, so it follows browser autoplay rules.

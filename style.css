@@ -1425,7 +1425,7 @@ body.dragging {
 .toggle-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto auto;
   gap: 8px;
   align-items: center;
 }
@@ -1450,6 +1450,44 @@ body.dragging {
   color: #1b0303;
   background: var(--red);
   border-color: rgba(255, 91, 88, 0.72);
+}
+
+.solo-button.soloed {
+  color: #04200a;
+  background: var(--green);
+  border-color: rgba(120, 255, 134, 0.72);
+}
+
+.sound-toggles .toggle-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.sound-toggles .toggle-button {
+  min-height: 26px;
+  font-size: 0.7rem;
+}
+
+/* Hit flash: the strip's dot pops and the border warms for one hit. */
+.channel-strip.hit {
+  border-color: rgba(255, 180, 63, 0.55);
+  box-shadow: 0 0 18px rgba(255, 180, 63, 0.16);
+}
+
+.channel-strip.hit .row-dot {
+  animation: dot-flash 170ms ease-out;
+}
+
+@keyframes dot-flash {
+  0% { transform: scale(2); filter: brightness(1.7); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .channel-strip.hit .row-dot {
+    animation: none;
+  }
 }
 
 .drag-proxy {
@@ -1711,7 +1749,7 @@ body.dragging {
   }
 
   .channel-strips .toggle-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 
@@ -1771,7 +1809,7 @@ body.dragging {
   }
 
   .channel-strips .toggle-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 

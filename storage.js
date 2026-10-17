@@ -9,7 +9,7 @@ import { getGroove, encodePattern, decodePattern } from "./grooves.js";
 export const STORAGE_KEY = "air-beat-board:session:v1";
 export const FORMAT_VERSION = 1;
 
-const ROW_FIELDS = ["volume", "pitch", "send", "gain", "drive", "tone", "decay", "pan", "color", "muted", "slot"];
+const ROW_FIELDS = ["volume", "pitch", "send", "drive", "tone", "decay", "pan", "color", "muted", "solo", "choke", "slot"];
 
 const encodeSlot = (slot) => (slot ? { board: encodePattern(slot.board), groove: slot.groove, length: slot.length } : null);
 const decodeSlot = (slot) => (slot && Array.isArray(slot.board)
@@ -72,6 +72,8 @@ export function deserialize(doc) {
       }
       row.slot = saved.slot === "b" ? "b" : "a";
       row.muted = Boolean(saved.muted);
+      row.solo = Boolean(saved.solo);
+      row.choke = Boolean(saved.choke);
       row.samples = { a: null, b: null };
       row.sampleNames = {
         a: typeof saved.sampleNames?.a === "string" ? saved.sampleNames.a : "built-in",

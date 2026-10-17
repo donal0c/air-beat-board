@@ -134,7 +134,7 @@
           <input id="sessionInput" type="file" accept="application/json,.json" hidden />
           <p class="shortcut-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> play · <kbd>Esc</kbd> stop · <kbd>←↑→↓</kbd> move ·
-            <kbd>1</kbd>–<kbd>4</kbd> state · <kbd>M</kbd> mute · <kbd>⌘Z</kbd> undo
+            <kbd>1</kbd>–<kbd>4</kbd> state · <kbd>M</kbd> mute · <kbd>S</kbd> solo · <kbd>⌘Z</kbd> undo
           </p>
         </section>
 
@@ -216,10 +216,13 @@
                 <strong id="soundReadout">Kick · Slot A built-in</strong>
               </div>
               <div class="sound-grid">
-                <label class="sound-control">
-                  <span><b>Gain</b><output id="rowGainValue">80%</output></span>
-                  <input id="rowGain" data-sound-param="gain" type="range" min="0" max="140" value="80" />
-                </label>
+                <div class="sound-control sound-toggles">
+                  <span><b>Row</b></span>
+                  <div class="toggle-pair">
+                    <button id="rowSoloBtn" type="button" class="toggle-button solo-button" title="Only soloed rows play (S)">Solo</button>
+                    <button id="rowChokeBtn" type="button" class="toggle-button choke-button" title="Each hit cuts the previous one">Choke</button>
+                  </div>
+                </div>
                 <label class="sound-control">
                   <span><b>Drive</b><output id="rowDriveValue">0%</output></span>
                   <input id="rowDrive" data-sound-param="drive" type="range" min="0" max="100" value="0" />

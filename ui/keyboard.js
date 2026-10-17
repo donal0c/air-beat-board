@@ -2,7 +2,7 @@
 //
 //   Space            play / pause        Escape        stop and reset
 //   Arrow keys       move selection      1 2 3 4       set cell state
-//   Backspace/Delete clear cell          M             mute selected row
+//   Backspace/Delete clear cell          M / S         mute / solo selected row
 //   Cmd/Ctrl+Z       undo                Shift+Cmd/Ctrl+Z, Ctrl+Y   redo
 //
 // Shortcuts stay out of the way while a text field or select has focus.
@@ -76,6 +76,11 @@ export function initKeyboard({ focusSelectedCell }) {
     if (key.toLowerCase() === "m") {
       evt.preventDefault();
       actions.toggleMute(row);
+      return;
+    }
+    if (key.toLowerCase() === "s") {
+      evt.preventDefault();
+      actions.toggleSolo(row);
     }
   });
 }

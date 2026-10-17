@@ -30,8 +30,7 @@ function effectiveTone(rowState) {
 }
 
 function usesNeutralSoundPath(rowState) {
-  return closeTo(rowState.gain, DEFAULT_SOUND.gain)
-    && closeTo(rowState.drive, DEFAULT_SOUND.drive)
+  return closeTo(rowState.drive, DEFAULT_SOUND.drive)
     && closeTo(rowState.tone, DEFAULT_SOUND.tone)
     && closeTo(rowState.decay, DEFAULT_SOUND.decay)
     && closeTo(rowState.pan, DEFAULT_SOUND.pan)
@@ -113,6 +112,7 @@ function sample(engine, row, t, buffer, volume, pitch, send) {
   src.connect(env).connect(out);
   src.start(t);
   src.stop(t + Math.min(buffer.duration / src.playbackRate.value, 1.4 * rowState.decay));
+  return env;
 }
 
 function kick(engine, row, t, volume, pitch, send) {
@@ -137,6 +137,7 @@ function kick(engine, row, t, volume, pitch, send) {
   body.start(t);
   osc.stop(t + 0.38 * decay);
   body.stop(t + 0.22 * decay);
+  return gain;
 }
 
 function snare(engine, row, t, volume, pitch, send) {
@@ -159,6 +160,7 @@ function snare(engine, row, t, volume, pitch, send) {
   src.connect(hp).connect(bp).connect(gain).connect(out);
   src.start(t);
   src.stop(t + 0.18 * decay);
+  return gain;
 }
 
 function hat(engine, row, t, volume, pitch, send) {
@@ -174,6 +176,7 @@ function hat(engine, row, t, volume, pitch, send) {
   src.connect(hp).connect(gain).connect(out);
   src.start(t);
   src.stop(t + 0.08 * decay);
+  return gain;
 }
 
 function perc(engine, row, t, volume, pitch, send) {
@@ -188,6 +191,7 @@ function perc(engine, row, t, volume, pitch, send) {
   osc.connect(gain).connect(out);
   osc.start(t);
   osc.stop(t + 0.13 * decay);
+  return gain;
 }
 
 function bass(engine, row, t, volume, pitch, send) {
@@ -210,27 +214,22 @@ function bass(engine, row, t, volume, pitch, send) {
   osc.connect(filter).connect(gain).connect(out);
   osc.start(t);
   osc.stop(t + 0.24 * decay);
+  return gain;
 }
 
 const PROCEDURAL = [kick, snare, hat, perc, bass];
 
 /**
  * Fire row `row` at time `t`: the loaded sample for the active slot if there
- * is one, otherwise the row's procedural voice. Returns the loudness
- * contribution used by the master meter.
+ * is one, otherwise the row's procedural voice. Returns the voice's envelope
+ * GainNode so the engine can choke it when the next hit arrives.
  */
 export function triggerRow(engine, row, t) {
   const rowState = state.rows[row];
   const buffer = rowState.samples[rowState.slot];
-  const volume = rowState.volume * (rowState.gain / 0.8);
-  const { send, pitch } = rowState;
+  const { volume, send, pitch } = rowState;
 
-  if (buffer) {
-    sample(engine, row, t, buffer, volume, pitch, send);
-  } else {
-    const voice = PROCEDURAL[row];
-    if (voice) voice(engine, row, t, volume * KITS[state.kit].lift, pitch, send);
-  }
-
-  return 0.18 + volume * 0.2;
+  if (buffer) return sample(engine, row, t, buffer, volume, pitch, send);
+  const voice = PROCEDURAL[row];
+  return voice ? voice(engine, row, t, volume * KITS[state.kit].lift, pitch, send) : null;
 }

@@ -46,7 +46,6 @@ const refs = {
   cellPanel: $("#cellPanel"),
   soundPanel: $("#soundPanel"),
   soundReadout: $("#soundReadout"),
-  rowGainValue: $("#rowGainValue"),
   rowDriveValue: $("#rowDriveValue"),
   rowToneValue: $("#rowToneValue"),
   rowDecayValue: $("#rowDecayValue"),
@@ -86,10 +85,11 @@ function init() {
     state.message = { text: "Click cells to compose. Press play when the board looks alive.", undo: false };
   }
 
-  initPanels(refs);
+  const panels = initPanels(refs);
   const board = initBoard(refs);
   audio.onStep = board.renderPlayhead;
   audio.onBar = launchPendingSlot;
+  audio.onHits = panels.flashRows;
   startAutosave(subscribe);
   initKeyboard({ focusSelectedCell: board.focusSelectedCell });
 

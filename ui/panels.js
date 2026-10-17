@@ -6,7 +6,8 @@ import { KITS } from "../audio/kits.js";
 import { GROOVES, getGroove } from "../grooves.js";
 import * as actions from "../actions.js";
 
-const SOUND_PARAMS = ["gain", "drive", "tone", "decay", "pan", "pitch", "send"];
+const SOUND_PARAMS = ["drive", "tone", "decay", "pan", "pitch", "send"];
+const HIT_FLASH_MS = 170;
 
 /** Set an input's value unless the user is currently editing it. */
 function setInputValue(input, value) {
@@ -40,6 +41,7 @@ export function initPanels(refs) {
         </label>
         <div class="toggle-row">
           <button type="button" class="toggle-button mute-button" data-mute-row="${index}">Mute</button>
+          <button type="button" class="toggle-button solo-button" data-solo-row="${index}">Solo</button>
           <span>Slot</span>
           <button type="button" class="toggle-button slot-button active" data-slot-row="${index}" data-slot="a">A</button>
           <button type="button" class="toggle-button slot-button" data-slot-row="${index}" data-slot="b">B</button>
@@ -61,6 +63,9 @@ export function initPanels(refs) {
       volume: root.querySelector(".row-volume"),
       color: root.querySelector(".row-color"),
       mute: root.querySelector("[data-mute-row]"),
+      solo: root.querySelector("[data-solo-row]"),
+      dot: root.querySelector(".row-dot"),
+      flashTimer: null,
       slotA: root.querySelector('[data-slot="a"]'),
       slotB: root.querySelector('[data-slot="b"]')
     };
@@ -79,8 +84,9 @@ export function initPanels(refs) {
   const soundInputs = Object.fromEntries(
     SOUND_PARAMS.map((param) => [param, document.querySelector(`[data-sound-param="${param}"]`)])
   );
+  const rowSoloBtn = document.querySelector("#rowSoloBtn");
+  const rowChokeBtn = document.querySelector("#rowChokeBtn");
   const soundOutputs = {
-    gain: refs.rowGainValue,
     drive: refs.rowDriveValue,
     tone: refs.rowToneValue,
     decay: refs.rowDecayValue,
@@ -150,14 +156,16 @@ export function initPanels(refs) {
     stateButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.state === cellState));
 
     const percent = (value) => Math.round(value * 100);
-    setInputValue(soundInputs.gain, percent(rowState.gain));
     setInputValue(soundInputs.drive, percent(rowState.drive));
     setInputValue(soundInputs.tone, percent(rowState.tone));
     setInputValue(soundInputs.decay, percent(rowState.decay));
     setInputValue(soundInputs.pan, percent(rowState.pan));
     setInputValue(soundInputs.pitch, rowState.pitch);
     setInputValue(soundInputs.send, percent(rowState.send));
-    setText(soundOutputs.gain, `${percent(rowState.gain)}%`);
+    rowSoloBtn.classList.toggle("soloed", rowState.solo);
+    rowSoloBtn.setAttribute("aria-pressed", String(rowState.solo));
+    rowChokeBtn.classList.toggle("active", rowState.choke);
+    rowChokeBtn.setAttribute("aria-pressed", String(rowState.choke));
     setText(soundOutputs.drive, `${percent(rowState.drive)}%`);
     setText(soundOutputs.tone, `${percent(rowState.tone)}%`);
     setText(soundOutputs.decay, `${percent(rowState.decay)}%`);
@@ -181,7 +189,9 @@ export function initPanels(refs) {
       setInputValue(strip.volume, Math.round(rowState.volume * 100));
       setInputValue(strip.color, Math.round(rowState.color * 100));
       strip.mute.classList.toggle("muted", rowState.muted);
-      setText(strip.mute, rowState.muted ? "Muted" : "Mute");
+      strip.mute.setAttribute("aria-pressed", String(rowState.muted));
+      strip.solo.classList.toggle("soloed", rowState.solo);
+      strip.solo.setAttribute("aria-pressed", String(rowState.solo));
       strip.slotA.classList.toggle("active", rowState.slot === "a");
       strip.slotB.classList.toggle("active", rowState.slot === "b");
     });
@@ -226,6 +236,9 @@ export function initPanels(refs) {
       actions.setSelectedRowParam(param, Number(soundInputs[param].value));
     });
   });
+
+  rowSoloBtn.addEventListener("click", () => actions.toggleSolo(state.selected.row));
+  rowChokeBtn.addEventListener("click", () => actions.toggleChoke(state.selected.row));
 
   refs.playBtn.addEventListener("click", actions.togglePlayback);
   refs.bigPlayBtn.addEventListener("click", actions.togglePlayback);
@@ -298,6 +311,11 @@ export function initPanels(refs) {
       actions.toggleMute(Number(mute.dataset.muteRow));
       return;
     }
+    const solo = evt.target.closest("[data-solo-row]");
+    if (solo) {
+      actions.toggleSolo(Number(solo.dataset.soloRow));
+      return;
+    }
     const slot = evt.target.closest("[data-slot-row]");
     if (slot) {
       actions.setSlot(Number(slot.dataset.slotRow), slot.dataset.slot);
@@ -309,6 +327,24 @@ export function initPanels(refs) {
     }
   });
 
+  /** Flash the strips for rows that just fired. */
+  function flashRows(rows) {
+    for (const row of rows) {
+      const strip = strips[row];
+      if (!strip) continue;
+      strip.root.classList.remove("hit");
+      void strip.root.offsetWidth;
+      strip.root.classList.add("hit");
+      if (strip.flashTimer) clearTimeout(strip.flashTimer);
+      strip.flashTimer = setTimeout(() => {
+        strip.root.classList.remove("hit");
+        strip.flashTimer = null;
+      }, HIT_FLASH_MS);
+    }
+  }
+
   subscribe(render);
   render();
+
+  return { flashRows };
 }

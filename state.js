@@ -19,7 +19,6 @@ export const MAX_STEPS = COLS * STEPS_PER_COL;
 export const STATE_ORDER = ["empty", "first", "second", "both"];
 
 export const DEFAULT_SOUND = {
-  gain: 0.8,
   drive: 0,
   tone: 0.62,
   decay: 1,
@@ -47,13 +46,15 @@ const makeRowState = () => ({
   volume: 0.82,
   pitch: 0,
   send: DEFAULT_SOUND.send,
-  gain: DEFAULT_SOUND.gain,
   drive: DEFAULT_SOUND.drive,
   tone: DEFAULT_SOUND.tone,
   decay: DEFAULT_SOUND.decay,
   pan: DEFAULT_SOUND.pan,
   color: DEFAULT_SOUND.color,
   muted: false,
+  solo: false,
+  /** When set, a new hit on this row cuts the previous one (hi-hat style). */
+  choke: false,
   slot: "a",
   samples: { a: null, b: null },
   sampleNames: { a: "built-in", b: "empty" }

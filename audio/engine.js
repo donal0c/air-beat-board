@@ -7,6 +7,8 @@ import { state, cellTriggersStep, ROWS } from "../state.js";
 import { triggerRow } from "./voices.js";
 
 const SCHEDULER_INTERVAL_MS = 25;
+const METER_FFT = 512;
+const CHOKE_TAIL_S = 0.006;
 const LOOKAHEAD_S = 0.15;
 const START_LATENCY_S = 0.08;
 
@@ -19,6 +21,9 @@ export class AirBeatAudio {
     this.delayFeedback = null;
     this.delayReturn = null;
     this.noiseBuffer = null;
+    this.analyser = null;
+    this.meterData = null;
+    this.lastVoice = ROWS.map(() => null);
     this.timer = null;
     this.step = 0;
     this.nextStepTime = 0;
@@ -29,6 +34,8 @@ export class AirBeatAudio {
     this.onStep = null;
     /** Called just before step 0 of each loop is scheduled. */
     this.onBar = null;
+    /** Called with the row indexes that just fired, for strip flashes. */
+    this.onHits = null;
   }
 
   async ensure() {
@@ -59,6 +66,11 @@ export class AirBeatAudio {
     this.delay.connect(this.delayReturn).connect(this.master);
 
     this.master.connect(this.comp).connect(ac.destination);
+    this.analyser = ac.createAnalyser();
+    this.analyser.fftSize = METER_FFT;
+    this.analyser.smoothingTimeConstant = 0;
+    this.comp.connect(this.analyser);
+    this.meterData = new Float32Array(this.analyser.fftSize);
     this.noiseBuffer = this.createNoiseBuffer(2);
 
     await ac.resume();
@@ -110,16 +122,16 @@ export class AirBeatAudio {
       if (step === 0) this.onBar?.();
       const swingOffset = step % 2 === 1 ? stepDur * (state.swing - 0.5) * 0.72 : 0;
       const fireAt = this.nextStepTime + swingOffset;
-      this.scheduleStep(step, fireAt);
-      this.queueVisualStep(step, fireAt);
+      const hits = this.scheduleStep(step, fireAt);
+      this.queueVisualStep(step, fireAt, hits);
 
       this.nextStepTime += stepDur;
       this.step = (this.step + 1) % state.length;
     }
   }
 
-  queueVisualStep(step, t) {
-    this.visualQueue.push({ step, time: t });
+  queueVisualStep(step, t, hits) {
+    this.visualQueue.push({ step, time: t, hits });
   }
 
   /**
@@ -131,28 +143,61 @@ export class AirBeatAudio {
     if (!this.ac || !state.playing || this.visualQueue.length === 0) return;
     const now = this.ac.currentTime;
     let latest = null;
+    const hits = new Set();
     while (this.visualQueue.length && this.visualQueue[0].time <= now) {
       latest = this.visualQueue.shift();
+      for (const row of latest.hits) hits.add(row);
     }
-    if (latest && latest.step !== state.currentStep) {
+    if (!latest) return;
+    if (latest.step !== state.currentStep) {
       state.currentStep = latest.step;
       this.onStep?.(latest.step);
     }
+    if (hits.size) this.onHits?.([...hits]);
   }
 
+  /** Schedule every audible row for `step` at `t`. Returns the rows that fired. */
   scheduleStep(step, t) {
+    const anySolo = state.rows.some((row) => row.solo);
+    const hits = [];
     for (let row = 0; row < ROWS.length; row += 1) {
-      if (state.rows[row].muted) continue;
-      if (cellTriggersStep(row, step)) {
-        const loudness = triggerRow(this, row, t);
-        this.level = Math.min(1, this.level + loudness);
-      }
+      const rowState = state.rows[row];
+      if (rowState.muted || (anySolo && !rowState.solo)) continue;
+      if (!cellTriggersStep(row, step)) continue;
+
+      if (rowState.choke) this.chokeRow(row, t);
+      this.lastVoice[row] = triggerRow(this, row, t);
+      hits.push(row);
     }
+    return hits;
   }
 
-  /** Decay the meter level; called once per animation frame. */
+  /** Fade the row's previous voice out just before `t`. */
+  chokeRow(row, t) {
+    const node = this.lastVoice[row];
+    if (!node) return;
+    const param = node.gain;
+    if (typeof param.cancelAndHoldAtTime === "function") param.cancelAndHoldAtTime(t);
+    else param.cancelScheduledValues(t);
+    param.setTargetAtTime(0.0001, t, CHOKE_TAIL_S);
+    this.lastVoice[row] = null;
+  }
+
+  /**
+   * Master meter: RMS of the compressed output with a fast attack and a
+   * slower fall. Called once per animation frame; returns 0..1.
+   */
   tickMeter() {
-    this.level = Math.max(0, this.level - 0.018);
+    if (!this.analyser || !state.playing) {
+      this.level = Math.max(0, this.level * 0.86 - 0.002);
+      return this.level;
+    }
+    this.analyser.getFloatTimeDomainData(this.meterData);
+    let sum = 0;
+    for (let i = 0; i < this.meterData.length; i += 1) sum += this.meterData[i] * this.meterData[i];
+    const rms = Math.sqrt(sum / this.meterData.length);
+    const target = Math.min(1, rms * 3.2);
+    this.level = target > this.level ? target : Math.max(target, this.level * 0.9);
     return this.level;
   }
 }
