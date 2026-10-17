@@ -142,8 +142,11 @@ const state = {
   })),
   history: [],
   drag: null,
+  pendingDrag: null,
   suppressGridClick: false
 };
+
+const DRAG_THRESHOLD_PX = 6;
 
 class AirBeatAudio {
   constructor() {
@@ -503,8 +506,16 @@ function pushHistory() {
   if (state.history.length > 40) state.history.shift();
 }
 
-function setMessage(text) {
+function setMessage(text, options = {}) {
   refs.message.textContent = text;
+  if (options.undo) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "message-undo";
+    button.textContent = "Undo";
+    button.addEventListener("click", undoBoard);
+    refs.message.append(" ", button);
+  }
 }
 
 function setCell(row, col, value, options = {}) {
@@ -545,12 +556,22 @@ function flipSelected() {
   else setMessage("Stacked tokens already trigger both sixteenths.");
 }
 
-function seedPattern(key = state.kit) {
+function boardIsEmpty() {
+  return state.board.every((row) => row.every((cell) => cell.state === "empty"));
+}
+
+function seedPattern(key = state.kit, options = {}) {
+  const replaced = !boardIsEmpty();
   pushHistory();
   state.board = KITS[key].pattern.map((row) => row.map((cellState) => ({ state: cellState })));
   renderBoard();
   renderSelection();
-  setMessage(`${KITS[key].name} pattern loaded.`);
+  if (options.silent) return;
+  if (replaced) {
+    setMessage(`${KITS[key].name} pattern replaced your board.`, { undo: true });
+  } else {
+    setMessage(`${KITS[key].name} pattern loaded.`);
+  }
 }
 
 function renderStaticUi() {
@@ -721,45 +742,68 @@ function bindEvents() {
     cycleCell(Number(cell.dataset.row), Number(cell.dataset.col));
   });
 
+  // A press on a token only *arms* a drag. The drag starts once the pointer
+  // travels past DRAG_THRESHOLD_PX; a plain click falls through to the grid
+  // click handler and cycles the cell as normal.
   refs.beatGrid.addEventListener("pointerdown", (evt) => {
+    if (evt.button !== 0 && evt.pointerType === "mouse") return;
     const token = evt.target.closest(".token");
     if (!token) return;
     const cell = evt.target.closest(".cell");
     if (!cell) return;
-    evt.preventDefault();
-    evt.stopPropagation();
-    selectCell(Number(cell.dataset.row), Number(cell.dataset.col));
-    startDrag({
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    state.pendingDrag = {
       pointerId: evt.pointerId,
       x: evt.clientX,
       y: evt.clientY,
-      source: { type: "cell", row: Number(cell.dataset.row), col: Number(cell.dataset.col) },
-      tokenState: state.board[Number(cell.dataset.row)][Number(cell.dataset.col)].state
-    });
+      captureEl: refs.beatGrid,
+      source: { type: "cell", row, col },
+      tokenState: state.board[row][col].state
+    };
   });
 
   refs.tokenTray.addEventListener("pointerdown", (evt) => {
+    if (evt.button !== 0 && evt.pointerType === "mouse") return;
     const token = evt.target.closest(".ghost-token");
     if (!token) return;
-    evt.preventDefault();
-    startDrag({
+    state.pendingDrag = {
       pointerId: evt.pointerId,
       x: evt.clientX,
       y: evt.clientY,
+      captureEl: refs.tokenTray,
       source: { type: "tray" },
       tokenState: "first"
-    });
+    };
   });
 
   document.addEventListener("pointermove", (evt) => {
+    const pending = state.pendingDrag;
+    if (pending && pending.pointerId === evt.pointerId) {
+      const dx = evt.clientX - pending.x;
+      const dy = evt.clientY - pending.y;
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+      state.pendingDrag = null;
+      if (pending.source.type === "cell") {
+        selectCell(pending.source.row, pending.source.col);
+      }
+      startDrag(pending);
+    }
     if (!state.drag || state.drag.pointerId !== evt.pointerId) return;
     moveDrag(evt.clientX, evt.clientY);
   });
 
-  document.addEventListener("pointerup", (evt) => {
+  const endPointer = (evt) => {
+    if (state.pendingDrag && state.pendingDrag.pointerId === evt.pointerId) {
+      state.pendingDrag = null;
+      return;
+    }
     if (!state.drag || state.drag.pointerId !== evt.pointerId) return;
-    finishDrag(evt.clientX, evt.clientY);
-  });
+    finishDrag(evt.clientX, evt.clientY, evt.type === "pointercancel");
+  };
+
+  document.addEventListener("pointerup", endPointer);
+  document.addEventListener("pointercancel", endPointer);
 
   $$(".state-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -791,10 +835,30 @@ function bindEvents() {
   refs.importBtn.addEventListener("click", () => refs.sampleInput.click());
   refs.sampleInput.addEventListener("change", handleSampleImport);
 
-  refs.bpmInput.addEventListener("input", () => {
-    state.bpm = clamp(Number(refs.bpmInput.value) || 128, 70, 180);
+  const commitBpm = (value) => {
+    const parsed = Number(value);
+    state.bpm = clamp(Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : state.bpm, 70, 180);
     renderGlobalControls();
+  };
+
+  // Clamp on commit, not on every keystroke, so typing "95" lands on 95.
+  refs.bpmInput.addEventListener("change", () => commitBpm(refs.bpmInput.value));
+  refs.bpmInput.addEventListener("keydown", (evt) => {
+    if (evt.key === "Enter") {
+      refs.bpmInput.blur();
+      return;
+    }
+    if (evt.key !== "ArrowUp" && evt.key !== "ArrowDown") return;
+    evt.preventDefault();
+    const step = evt.shiftKey ? 5 : 1;
+    commitBpm(state.bpm + (evt.key === "ArrowUp" ? step : -step));
   });
+  refs.bpmInput.addEventListener("wheel", (evt) => {
+    if (document.activeElement !== refs.bpmInput) return;
+    evt.preventDefault();
+    const step = evt.shiftKey ? 5 : 1;
+    commitBpm(state.bpm + (evt.deltaY < 0 ? step : -step));
+  }, { passive: false });
 
   const syncSwing = (value) => {
     state.swing = clamp(Number(value) / 100, 0, 0.72);
@@ -813,10 +877,12 @@ function bindEvents() {
   refs.lengthSelect.addEventListener("change", () => syncLength(refs.lengthSelect.value));
   refs.boardLength.addEventListener("input", () => syncLength(refs.boardLength.value));
 
+  // Changing the kit only changes the sound. Loading its groove is an
+  // explicit action (Seed pattern), so a kit switch never wipes the board.
   refs.kitSelect.addEventListener("change", () => {
     state.kit = refs.kitSelect.value;
-    seedPattern(state.kit);
     renderGlobalControls();
+    setMessage(`${KITS[state.kit].name} kit. Board kept; use Seed pattern to load its groove.`);
   });
 
   refs.masterInput.addEventListener("input", () => {
@@ -892,6 +958,12 @@ function startDrag(data) {
   state.drag.proxy.className = "drag-proxy";
   state.drag.proxy.innerHTML = `<span class="token ${data.tokenState}"></span>`;
   document.body.appendChild(state.drag.proxy);
+  document.body.classList.add("dragging");
+  try {
+    data.captureEl?.setPointerCapture(data.pointerId);
+  } catch {
+    // Capture is a nicety; dragging still works via the document listeners.
+  }
   moveDrag(data.x, data.y);
 }
 
@@ -902,14 +974,31 @@ function moveDrag(x, y) {
   state.drag.proxy.style.top = `${y - 27}px`;
 }
 
-function finishDrag(x, y) {
+function finishDrag(x, y, cancelled = false) {
   if (!state.drag) return;
   const drag = state.drag;
   drag.proxy.remove();
+  document.body.classList.remove("dragging");
+  try {
+    drag.captureEl?.releasePointerCapture(drag.pointerId);
+  } catch {
+    // Already released.
+  }
   state.drag = null;
 
-  const dropTarget = document.elementFromPoint(x, y)?.closest?.(".cell");
+  // The click that follows this pointerup belongs to the drag, not the cell.
+  // Clear the flag on the next tick so a swallowed click can never stick.
   state.suppressGridClick = true;
+  setTimeout(() => {
+    state.suppressGridClick = false;
+  }, 0);
+
+  if (cancelled) {
+    setMessage("Drag cancelled.");
+    return;
+  }
+
+  const dropTarget = document.elementFromPoint(x, y)?.closest?.(".cell");
   if (!dropTarget) {
     setMessage("Token released outside the board.");
     return;
@@ -917,6 +1006,12 @@ function finishDrag(x, y) {
 
   const row = Number(dropTarget.dataset.row);
   const col = Number(dropTarget.dataset.col);
+
+  if (drag.source.type === "cell" && drag.source.row === row && drag.source.col === col) {
+    // Dropped back where it came from: nothing changed, nothing to undo.
+    return;
+  }
+
   pushHistory();
 
   if (drag.source.type === "cell") {
@@ -949,7 +1044,7 @@ function clearBoard() {
   state.currentStep = -1;
   renderBoard();
   renderSelection();
-  setMessage("Board cleared. Start with one token and let it loop.");
+  setMessage("Board cleared. Start with one token and let it loop.", { undo: true });
 }
 
 async function togglePlayback() {
@@ -1008,7 +1103,8 @@ function updateMeter() {
 
 function init() {
   renderStaticUi();
-  seedPattern("warm");
+  seedPattern("warm", { silent: true });
+  setMessage("Click cells to compose. Press play when the board looks alive.");
   renderGlobalControls();
   bindEvents();
   updateMeter();

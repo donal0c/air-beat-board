@@ -16,9 +16,9 @@ manual QA list at the bottom is re-run before the phase is called done.
 The hand-tracking removal (587 deleted lines) is uncommitted on `main`.
 Nothing else should start on top of a dirty tree.
 
-- [ ] Commit the current working tree as "Remove hand tracking, add Session panel".
-- [ ] Add `.claude/launch.json` to the repo (or gitignore it, your call).
-- [ ] Create a `polish` branch from fresh `origin/main` for the phases below.
+- [x] Commit the current working tree as "Remove hand tracking, add Session panel".
+- [x] Add `.claude/launch.json` to the repo (or gitignore it, your call).
+- [x] Create a `polish` branch from fresh `origin/main` for the phases below.
 
 ---
 
@@ -31,32 +31,32 @@ These are the bugs that stop it being an instrument. Do them first, in order.
 The `pointerdown` handler on the grid starts a drag on any token and the
 drop lands on the same cell, so a cell can never be clicked past "first".
 
-- [ ] Add a drag threshold: record pointer origin on `pointerdown`, only call
+- [x] Add a drag threshold: record pointer origin on `pointerdown`, only call
       `startDrag` once the pointer moves more than 6px. Below that, let the
       `click` fire and cycle normally.
-- [ ] Drop onto the source cell is a no-op: do not touch state, do not push
+- [x] Drop onto the source cell is a no-op: do not touch state, do not push
       history, keep the message as is.
-- [ ] Use `setPointerCapture` on the grid so drags that leave the board still
+- [x] Use `setPointerCapture` on the grid so drags that leave the board still
       end cleanly.
-- [ ] Verify: click one cell four times, states go empty, first, second, both,
+- [x] Verify: click one cell four times, states go empty, first, second, both,
       empty. Drag still works. Undo stack grows only on real changes.
 
 ### 1.2 Fix BPM input
 
 Clamping on every `input` event rewrites the field mid-keystroke.
 
-- [ ] Clamp and sync on `change` / blur / Enter, not on `input`.
-- [ ] Add arrow-key and scroll-wheel nudging on the field (1 per step, 5 with
+- [x] Clamp and sync on `change` / blur / Enter, not on `input`.
+- [x] Add arrow-key and scroll-wheel nudging on the field (1 per step, 5 with
       Shift) so the value is also adjustable without typing.
-- [ ] Verify: typing "95" lands on 95; typing "300" lands on 180 after blur.
+- [x] Verify: typing "95" lands on 95; typing "300" lands on 180 after blur.
 
 ### 1.3 Protect the board on kit change
 
 Switching kits silently replaces the whole pattern.
 
-- [ ] Kit change only changes the *sound*. Loading the kit's pattern becomes
+- [x] Kit change only changes the *sound*. Loading the kit's pattern becomes
       an explicit action in the groove browser (Phase 1.6).
-- [ ] When any action replaces a non-empty board (groove load, clear), show
+- [x] When any action replaces a non-empty board (groove load, clear), show
       an inline "Replaced the board. Undo" message with an actual Undo button
       in the message panel rather than a modal.
 

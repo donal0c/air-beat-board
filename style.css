@@ -449,6 +449,27 @@ h1 {
   display: grid;
   align-items: center;
 }
+.message-undo {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 180, 63, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 180, 63, 0.14);
+  color: var(--amber);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.message-undo:hover {
+  background: rgba(255, 180, 63, 0.26);
+}
+body.dragging {
+  cursor: grabbing;
+}
 
 .instrument-panel {
   min-height: 0;
@@ -634,6 +655,9 @@ h1 {
 
 .beat-grid {
   position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(5, 1fr);
@@ -829,6 +853,9 @@ h1 {
 }
 
 .token-tray {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   min-height: 72px;
   display: flex;
   align-items: center;
