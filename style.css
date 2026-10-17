@@ -1425,9 +1425,26 @@ body.dragging {
 .toggle-row {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: auto auto 1fr auto auto;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+}
+
+.toggle-group {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+}
+
+.slot-group {
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.toggle-group .toggle-button {
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 0.72rem;
 }
 
 .toggle-button {
@@ -1749,7 +1766,7 @@ body.dragging {
   }
 
   .channel-strips .toggle-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 
@@ -1809,7 +1826,7 @@ body.dragging {
   }
 
   .channel-strips .toggle-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 

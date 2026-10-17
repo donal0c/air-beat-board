@@ -40,11 +40,15 @@ export function initPanels(refs) {
           <input class="row-color" data-row="${index}" type="range" min="0" max="100" value="${Math.round(state.rows[index].color * 100)}" />
         </label>
         <div class="toggle-row">
-          <button type="button" class="toggle-button mute-button" data-mute-row="${index}">Mute</button>
-          <button type="button" class="toggle-button solo-button" data-solo-row="${index}">Solo</button>
-          <span>Slot</span>
-          <button type="button" class="toggle-button slot-button active" data-slot-row="${index}" data-slot="a">A</button>
-          <button type="button" class="toggle-button slot-button" data-slot-row="${index}" data-slot="b">B</button>
+          <div class="toggle-group">
+            <button type="button" class="toggle-button mute-button" data-mute-row="${index}">Mute</button>
+            <button type="button" class="toggle-button solo-button" data-solo-row="${index}">Solo</button>
+          </div>
+          <div class="toggle-group slot-group">
+            <span>Slot</span>
+            <button type="button" class="toggle-button slot-button active" data-slot-row="${index}" data-slot="a">A</button>
+            <button type="button" class="toggle-button slot-button" data-slot-row="${index}" data-slot="b">B</button>
+          </div>
         </div>
       </div>
     </div>
