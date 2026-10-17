@@ -35,7 +35,7 @@
           <strong id="swingReadout">56%</strong>
         </label>
 
-        <label class="value-control">
+        <label class="value-control length-control">
           <span>Length</span>
           <select id="lengthSelect" aria-label="Pattern length">
             <option value="16" selected>16</option>
@@ -69,7 +69,7 @@
       </div>
     </header>
 
-    <main class="workspace">
+    <main class="workspace" data-mobile-tab="inspector">
       <section class="session-panel" aria-label="Session controls">
         <div class="panel-title">
           <div>
@@ -178,9 +178,20 @@
           </div>
         </div>
 
+        <div id="firstRunHint" class="first-run-hint" hidden>
+          <span>Tap a cell to cycle it: empty → first → second → both. Drag a token to move it.</span>
+          <button id="dismissHintBtn" type="button" aria-label="Dismiss hint">✕</button>
+        </div>
+
+        <nav class="mobile-tabs" aria-label="Panels">
+          <button type="button" data-mobile-tab="inspector" class="active">Inspector</button>
+          <button type="button" data-mobile-tab="session">Session</button>
+          <button type="button" data-mobile-tab="rows">Rows</button>
+        </nav>
+
         <div class="bottom-dock">
           <section class="dock-section token-dock">
-            <div class="section-head"><span>Beat tokens</span><strong id="tokenCount">30 tokens</strong></div>
+            <div class="section-head"><span>Beat tokens</span><strong id="tokenCount">0 placed</strong></div>
             <div id="tokenTray" class="token-tray" aria-label="Beat token tray"></div>
           </section>
 

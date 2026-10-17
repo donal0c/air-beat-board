@@ -6,6 +6,7 @@ import { cycleCell, selectCell, dropToken, setMessage } from "../actions.js";
 
 const DRAG_THRESHOLD_PX = 6;
 const TRAY_TOKENS = 12;
+const HINT_KEY = "air-beat-board:hint-dismissed";
 
 export function initBoard(refs) {
   const cells = [];
@@ -23,7 +24,7 @@ export function initBoard(refs) {
     <div class="row-label" data-row-label="${index}">
       <strong>${index + 1}</strong>
       <span></span>
-      <em>${row.label}</em>
+      <em data-short="${row.label[0]}">${row.label}</em>
     </div>
   `).join("");
   rowLabels = [...refs.rowLabels.querySelectorAll("[data-row-label]")];
@@ -139,7 +140,33 @@ export function initBoard(refs) {
 
   let pendingDrag = null;
   let drag = null;
+  let dropTarget = null;
   let suppressGridClick = false;
+
+  // ---------------------------------------------------------- first-run hint
+
+  let hintDismissed = true;
+  try {
+    hintDismissed = localStorage.getItem(HINT_KEY) === "1";
+  } catch {
+    hintDismissed = false;
+  }
+  if (!hintDismissed) refs.firstRunHint.hidden = false;
+
+  function dismissHint() {
+    if (hintDismissed) return;
+    hintDismissed = true;
+    refs.firstRunHint.classList.add("leaving");
+    setTimeout(() => {
+      refs.firstRunHint.hidden = true;
+    }, 220);
+    try {
+      localStorage.setItem(HINT_KEY, "1");
+    } catch {
+      // Storage unavailable; the hint simply returns next visit.
+    }
+  }
+  refs.dismissHintBtn.addEventListener("click", dismissHint);
 
   const cellAt = (element) => element?.closest?.(".cell") ?? null;
 
@@ -158,16 +185,25 @@ export function initBoard(refs) {
     moveDrag(data.x, data.y);
   }
 
+  function setDropTarget(target) {
+    if (target === dropTarget) return;
+    dropTarget?.classList.remove("drop-target");
+    dropTarget = target;
+    dropTarget?.classList.add("drop-target");
+  }
+
   function moveDrag(x, y) {
     if (!drag) return;
     drag.proxy.style.left = `${x - 27}px`;
     drag.proxy.style.top = `${y - 27}px`;
+    setDropTarget(cellAt(document.elementFromPoint(x, y)));
   }
 
   function finishDrag(x, y, cancelled) {
     if (!drag) return;
     const current = drag;
     drag = null;
+    setDropTarget(null);
     current.proxy.remove();
     document.body.classList.remove("dragging");
     try {
@@ -193,6 +229,7 @@ export function initBoard(refs) {
       return;
     }
     dropToken(current.source, current.tokenState, Number(target.dataset.row), Number(target.dataset.col));
+    dismissHint();
   }
 
   function armDrag(evt, captureEl, source, tokenState) {
@@ -250,6 +287,7 @@ export function initBoard(refs) {
     const cell = cellAt(evt.target);
     if (!cell) return;
     cycleCell(Number(cell.dataset.row), Number(cell.dataset.col));
+    dismissHint();
   });
 
   /** Move keyboard focus to the selected cell (roving tabindex). */

@@ -126,7 +126,7 @@ Included in this version:
 - Procedural built-in kit.
 - Local sample import.
 - Per-row channel controls.
-- Responsive desktop and narrow-screen layouts.
+- Responsive desktop, tablet and phone layouts: on phones the board comes first, the transport docks to the bottom, and Session, Inspector and Rows live in drawer tabs.
 
 Not included in this version:
 

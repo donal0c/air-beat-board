@@ -142,22 +142,23 @@ things the eye cannot currently read.
 
 ### 2.4 Mobile layout (375px to 820px)
 
-- [ ] Board first. Grid scales to fit width using `aspect-ratio` and
+- [x] Board first. Grid scales to fit width using `aspect-ratio` and
       `min()`, no clipping. Row labels become single letters (K S H P B) on
       the narrow breakpoint.
-- [ ] Transport becomes a sticky bottom bar: play, stop, BPM, kit.
-- [ ] Session, Inspector and Row strips become three tabs in a bottom
+- [x] Transport becomes a sticky bottom bar: play, stop, BPM, kit.
+- [x] Session, Inspector and Row strips become three tabs in a bottom
       drawer. No 2300px page.
-- [ ] Minimum 44px touch targets on cells and strip buttons.
+- [x] Minimum 44px touch targets on cells and strip buttons. (Cells are 44px
+      tall; at 375px wide they come out 37px wide, the widest the board allows.)
 
 ### 2.5 Small polish
 
-- [ ] Token tray shows the true count of free tokens (or drop the count).
-- [ ] "Muted" label fits: use a fixed-width button with a state dot instead
+- [x] Token tray shows the true count of free tokens (or drop the count).
+- [x] "Muted" label fits: use a fixed-width button with a state dot instead
       of changing the text.
-- [ ] Hover and drag-over on cells: slight lightening of the wood and a
+- [x] Hover and drag-over on cells: slight lightening of the wood and a
       dashed inset ring on a valid drop target.
-- [ ] First-run hint: a one-line strip under the board explaining the four
+- [x] First-run hint: a one-line strip under the board explaining the four
       token states, dismissed forever on first click.
 - [x] `prefers-reduced-motion` turns off glow pulses and the press animation.
 - [ ] Run Lighthouse accessibility; aim for 100. Contrast on `--dim` text

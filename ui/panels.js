@@ -101,6 +101,32 @@ export function initPanels(refs) {
   const bigPlayIcon = refs.bigPlayBtn.querySelector("span");
 
   let renderedMessage = null;
+  const MOBILE_TAB_KEY = "air-beat-board:mobile-tab";
+  const mobileTabButtons = [...refs.mobileTabs.querySelectorAll("button[data-mobile-tab]")];
+
+  function setMobileTab(tab) {
+    refs.workspace.dataset.mobileTab = tab;
+    mobileTabButtons.forEach((btn) => {
+      const active = btn.dataset.mobileTab === tab;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", String(active));
+    });
+    try {
+      localStorage.setItem(MOBILE_TAB_KEY, tab);
+    } catch {
+      // Per-device convenience only.
+    }
+  }
+  try {
+    const saved = localStorage.getItem(MOBILE_TAB_KEY);
+    if (saved && mobileTabButtons.some((btn) => btn.dataset.mobileTab === saved)) setMobileTab(saved);
+  } catch {
+    // Storage unavailable; default tab stays.
+  }
+  refs.mobileTabs.addEventListener("click", (evt) => {
+    const btn = evt.target.closest("button[data-mobile-tab]");
+    if (btn) setMobileTab(btn.dataset.mobileTab);
+  });
 
   // ---------------------------------------------------------- rendering
 
@@ -127,6 +153,10 @@ export function initPanels(refs) {
     setText(refs.sessionLengthReadout, String(state.length));
     setText(refs.sessionSwingReadout, `${swingPercent}%`);
     setText(refs.sampleStatus, state.sampleStatus);
+
+    let placed = 0;
+    for (const row of state.board) for (const cell of row) if (cell.state !== "empty") placed += 1;
+    setText(refs.tokenCount, `${placed} placed`);
 
     setText(refs.grooveReadout, getGroove(state.groove).name);
 
