@@ -1,20 +1,3 @@
-import {
-  HandLandmarker,
-  FilesetResolver
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/vision_bundle.mjs";
-
-const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
-const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/wasm";
-
-const HAND_CONNECTIONS = [
-  [0, 1], [1, 2], [2, 3], [3, 4],
-  [0, 5], [5, 6], [6, 7], [7, 8],
-  [0, 9], [9, 10], [10, 11], [11, 12],
-  [0, 13], [13, 14], [14, 15], [15, 16],
-  [0, 17], [17, 18], [18, 19], [19, 20],
-  [5, 9], [9, 13], [13, 17]
-];
-
 const ROWS = [
   { id: "kick", label: "Kick", color: "#ffba4d" },
   { id: "snare", label: "Snare", color: "#ff716b" },
@@ -70,7 +53,6 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 const lerp = (a, b, t) => a + (b - a) * t;
-const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const closeTo = (a, b, epsilon = 0.0001) => Math.abs(a - b) <= epsilon;
 
 const refs = {
@@ -88,15 +70,11 @@ const refs = {
   kitSelect: $("#kitSelect"),
   masterInput: $("#masterInput"),
   masterMeter: $("#masterMeter"),
-  cameraBtn: $("#cameraBtn"),
-  cameraMode: $("#cameraMode"),
-  webcam: $("#webcam"),
-  handOverlay: $("#handOverlay"),
-  cameraFallback: $("#cameraFallback"),
-  leftCursor: $("#leftCursor"),
-  rightCursor: $("#rightCursor"),
-  leftConfidence: $("#leftConfidence"),
-  rightConfidence: $("#rightConfidence"),
+  sessionKitReadout: $("#sessionKitReadout"),
+  sessionBpmReadout: $("#sessionBpmReadout"),
+  sessionLengthReadout: $("#sessionLengthReadout"),
+  sessionSwingReadout: $("#sessionSwingReadout"),
+  sessionSelectedCell: $("#sessionSelectedCell"),
   message: $("#message"),
   rowLabels: $("#rowLabels"),
   beatGrid: $("#beatGrid"),
@@ -128,8 +106,6 @@ const refs = {
   sampleInput: $("#sampleInput"),
   sampleStatus: $("#sampleStatus")
 };
-
-const overlayCtx = refs.handOverlay.getContext("2d");
 
 const makeEmptyBoard = () =>
   Array.from({ length: ROWS.length }, () =>
@@ -166,18 +142,6 @@ const state = {
   })),
   history: [],
   drag: null,
-  hand: {
-    running: false,
-    landmarker: null,
-    stream: null,
-    lastVideoTime: -1,
-    left: null,
-    right: null,
-    prevPinch: false,
-    prevFist: false,
-    grabbed: null,
-    lastFistAt: 0
-  },
   suppressGridClick: false
 };
 
@@ -688,9 +652,14 @@ function renderSelection() {
   const slot = rowState.slot;
   refs.selectedReadout.textContent = `${ROWS[row].label} · Col ${col + 1}`;
   refs.soundReadout.textContent = `${ROWS[row].label} · Slot ${slot.toUpperCase()} ${rowState.sampleNames[slot]}`;
+  refs.sessionSelectedCell.textContent = `${ROWS[row].label} · Col ${col + 1} · ${describeState(cellState)}`;
 
   $$(".state-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.state === cellState);
+  });
+
+  $$(".session-state-guide [data-state-key]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.stateKey === cellState);
   });
 
   refs.rowGain.value = String(Math.round(rowState.gain * 100));
@@ -734,6 +703,10 @@ function renderGlobalControls() {
   refs.lengthSelect.value = String(state.length);
   refs.boardLength.value = String(state.length);
   refs.masterInput.value = String(Math.round(state.master * 100));
+  refs.sessionKitReadout.textContent = KITS[state.kit].name;
+  refs.sessionBpmReadout.textContent = String(state.bpm);
+  refs.sessionLengthReadout.textContent = String(state.length);
+  refs.sessionSwingReadout.textContent = `${Math.round(state.swing * 100)}%`;
 }
 
 function bindEvents() {
@@ -817,17 +790,15 @@ function bindEvents() {
   refs.undoBtn.addEventListener("click", undoBoard);
   refs.importBtn.addEventListener("click", () => refs.sampleInput.click());
   refs.sampleInput.addEventListener("change", handleSampleImport);
-  refs.cameraBtn.addEventListener("click", toggleCamera);
 
   refs.bpmInput.addEventListener("input", () => {
     state.bpm = clamp(Number(refs.bpmInput.value) || 128, 70, 180);
+    renderGlobalControls();
   });
 
   const syncSwing = (value) => {
     state.swing = clamp(Number(value) / 100, 0, 0.72);
-    refs.swingInput.value = String(Math.round(state.swing * 100));
-    refs.boardSwing.value = String(Math.round(state.swing * 100));
-    refs.swingReadout.textContent = `${Math.round(state.swing * 100)}%`;
+    renderGlobalControls();
   };
 
   refs.swingInput.addEventListener("input", () => syncSwing(refs.swingInput.value));
@@ -835,8 +806,7 @@ function bindEvents() {
 
   const syncLength = (value) => {
     state.length = Number(value);
-    refs.lengthSelect.value = String(state.length);
-    refs.boardLength.value = String(state.length);
+    renderGlobalControls();
     renderBoard();
   };
 
@@ -846,6 +816,7 @@ function bindEvents() {
   refs.kitSelect.addEventListener("change", () => {
     state.kit = refs.kitSelect.value;
     seedPattern(state.kit);
+    renderGlobalControls();
   });
 
   refs.masterInput.addEventListener("input", () => {
@@ -1027,343 +998,6 @@ async function handleSampleImport() {
   } finally {
     refs.sampleInput.value = "";
   }
-}
-
-async function toggleCamera() {
-  if (state.hand.running) {
-    stopCamera();
-    return;
-  }
-  await startCamera();
-}
-
-async function startCamera() {
-  refs.cameraBtn.disabled = true;
-  refs.cameraBtn.textContent = "Loading...";
-  refs.cameraMode.textContent = "Starting tracker";
-  setMessage("Loading hand tracker...");
-
-  try {
-    state.hand.stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        width: { ideal: 1280 },
-        height: { ideal: 960 },
-        facingMode: "user"
-      }
-    });
-
-    refs.webcam.srcObject = state.hand.stream;
-    await new Promise((resolve) => {
-      refs.webcam.onloadedmetadata = resolve;
-    });
-    await refs.webcam.play();
-
-    if (!state.hand.landmarker) {
-      const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-      state.hand.landmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: MODEL_URL,
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numHands: 2,
-        minHandDetectionConfidence: 0.55,
-        minHandPresenceConfidence: 0.55,
-        minTrackingConfidence: 0.55
-      });
-    }
-
-    state.hand.running = true;
-    refs.webcam.classList.add("live");
-    refs.cameraFallback.classList.add("hidden");
-    refs.cameraBtn.disabled = false;
-    refs.cameraBtn.textContent = "Stop camera";
-    refs.cameraBtn.classList.add("running");
-    refs.cameraMode.textContent = "Tracking enabled";
-    setMessage("Camera live. Open hand moves the cursor; pinch grabs tokens.");
-    requestAnimationFrame(handFrameLoop);
-  } catch (error) {
-    console.error(error);
-    refs.cameraBtn.disabled = false;
-    refs.cameraBtn.textContent = "Start camera";
-    refs.cameraBtn.classList.remove("running");
-    refs.cameraMode.textContent = "Camera unavailable";
-    refs.runtimeStatus.classList.add("warn");
-    setMessage(cameraErrorMessage(error));
-  }
-}
-
-function stopCamera() {
-  state.hand.running = false;
-  state.hand.left = null;
-  state.hand.right = null;
-  state.hand.prevPinch = false;
-  state.hand.prevFist = false;
-  if (state.hand.stream) {
-    state.hand.stream.getTracks().forEach((track) => track.stop());
-    state.hand.stream = null;
-  }
-  refs.webcam.pause();
-  refs.webcam.srcObject = null;
-  refs.webcam.classList.remove("live");
-  refs.cameraFallback.classList.remove("hidden");
-  refs.cameraBtn.textContent = "Start camera";
-  refs.cameraBtn.classList.remove("running");
-  refs.cameraMode.textContent = "Manual mode";
-  refs.leftCursor.style.display = "none";
-  refs.rightCursor.style.display = "none";
-  refs.leftConfidence.textContent = "not visible";
-  refs.rightConfidence.textContent = "not visible";
-  overlayCtx.clearRect(0, 0, refs.handOverlay.width, refs.handOverlay.height);
-  setMessage("Camera stopped. Mouse and touch still control the board.");
-}
-
-function cameraErrorMessage(error) {
-  if (!navigator.mediaDevices?.getUserMedia) return "This browser context does not support camera access.";
-  if (error?.name === "NotAllowedError") return "Camera permission was blocked. Manual controls are still fully available.";
-  if (error?.name === "NotFoundError") return "No camera was found. Manual controls are still fully available.";
-  if (error?.name === "NotReadableError") return "The camera is busy in another app. Manual controls are still fully available.";
-  return "Camera or hand tracking failed. Manual controls are still fully available.";
-}
-
-function handFrameLoop() {
-  if (!state.hand.running) return;
-
-  resizeOverlay();
-
-  if (refs.webcam.readyState >= 2 && refs.webcam.currentTime !== state.hand.lastVideoTime) {
-    state.hand.lastVideoTime = refs.webcam.currentTime;
-    const results = state.hand.landmarker.detectForVideo(refs.webcam, performance.now());
-    processHands(results);
-    drawHands(results);
-    updateHandControls();
-  }
-
-  requestAnimationFrame(handFrameLoop);
-}
-
-function resizeOverlay() {
-  const width = refs.webcam.videoWidth || 640;
-  const height = refs.webcam.videoHeight || 480;
-  if (refs.handOverlay.width !== width || refs.handOverlay.height !== height) {
-    refs.handOverlay.width = width;
-    refs.handOverlay.height = height;
-  }
-}
-
-function processHands(results) {
-  const detected = [];
-  const hands = results?.landmarks ?? [];
-  const handedness = results?.handednesses ?? results?.handedness ?? [];
-
-  for (let i = 0; i < hands.length; i += 1) {
-    const landmarks = hands[i];
-    const center = palmCenter(landmarks);
-    const score = handedness[i]?.[0]?.score ?? 0.9;
-
-    detected.push({
-      x: 1 - center.x,
-      y: center.y,
-      z: center.z,
-      raw: landmarks,
-      mirrored: landmarks.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z ?? 0 })),
-      score
-    });
-  }
-
-  detected.sort((a, b) => a.x - b.x);
-  state.hand.left = detected[0] ?? null;
-  state.hand.right = detected.length > 1 ? detected[detected.length - 1] : null;
-
-  if (detected.length === 1 && detected[0].x > 0.5) {
-    state.hand.left = null;
-    state.hand.right = detected[0];
-  }
-
-  refs.leftConfidence.textContent = state.hand.left ? `${Math.round(state.hand.left.score * 100)}%` : "not visible";
-  refs.rightConfidence.textContent = state.hand.right ? `${Math.round(state.hand.right.score * 100)}%` : "not visible";
-}
-
-function palmCenter(landmarks) {
-  const ids = [0, 5, 9, 13, 17];
-  const sum = ids.reduce((acc, id) => {
-    acc.x += landmarks[id].x;
-    acc.y += landmarks[id].y;
-    acc.z += landmarks[id].z ?? 0;
-    return acc;
-  }, { x: 0, y: 0, z: 0 });
-
-  return {
-    x: sum.x / ids.length,
-    y: sum.y / ids.length,
-    z: sum.z / ids.length
-  };
-}
-
-function updateHandControls() {
-  const hand = state.hand.right || state.hand.left;
-  updateCursor(refs.leftCursor, state.hand.left, "L");
-  updateCursor(refs.rightCursor, state.hand.right, "R");
-
-  if (!hand) {
-    state.hand.prevPinch = false;
-    state.hand.prevFist = false;
-    return;
-  }
-
-  const pointer = projectHandToViewport(hand);
-  const pinch = isPinch(hand);
-  const fist = isFist(hand);
-
-  if (pinch && !state.hand.prevPinch) {
-    beginHandGrab(pointer.x, pointer.y);
-  }
-
-  if (!pinch && state.hand.prevPinch) {
-    endHandGrab(pointer.x, pointer.y);
-  }
-
-  if (state.hand.grabbed && pinch) {
-    moveHandGrab(pointer.x, pointer.y);
-  }
-
-  if (fist && !state.hand.prevFist && performance.now() - state.hand.lastFistAt > 700) {
-    const cell = document.elementFromPoint(pointer.x, pointer.y)?.closest?.(".cell");
-    if (cell) selectCell(Number(cell.dataset.row), Number(cell.dataset.col));
-    flipSelected();
-    state.hand.lastFistAt = performance.now();
-  }
-
-  state.hand.prevPinch = pinch;
-  state.hand.prevFist = fist;
-}
-
-function projectHandToViewport(hand) {
-  return {
-    x: hand.x * window.innerWidth,
-    y: hand.y * window.innerHeight
-  };
-}
-
-function updateCursor(el, hand, label) {
-  if (!hand) {
-    el.style.display = "none";
-    return;
-  }
-  const pointer = projectHandToViewport(hand);
-  el.style.display = "grid";
-  el.style.left = `${pointer.x}px`;
-  el.style.top = `${pointer.y}px`;
-  el.textContent = label;
-  el.classList.toggle("grabbing", isPinch(hand));
-}
-
-function beginHandGrab(x, y) {
-  const cell = document.elementFromPoint(x, y)?.closest?.(".cell");
-  if (!cell) return;
-
-  const row = Number(cell.dataset.row);
-  const col = Number(cell.dataset.col);
-  selectCell(row, col);
-
-  const tokenState = state.board[row][col].state === "empty" ? "first" : state.board[row][col].state;
-  state.hand.grabbed = {
-    source: state.board[row][col].state === "empty" ? { type: "hand" } : { type: "cell", row, col },
-    tokenState,
-    proxy: document.createElement("div")
-  };
-  state.hand.grabbed.proxy.className = "drag-proxy";
-  state.hand.grabbed.proxy.innerHTML = `<span class="token ${tokenState}"></span>`;
-  document.body.appendChild(state.hand.grabbed.proxy);
-  moveHandGrab(x, y);
-}
-
-function moveHandGrab(x, y) {
-  const drag = state.hand.grabbed;
-  if (!drag) return;
-  drag.proxy.style.left = `${x - 27}px`;
-  drag.proxy.style.top = `${y - 27}px`;
-}
-
-function endHandGrab(x, y) {
-  const drag = state.hand.grabbed;
-  if (!drag) return;
-  drag.proxy.remove();
-  state.hand.grabbed = null;
-
-  const cell = document.elementFromPoint(x, y)?.closest?.(".cell");
-  if (!cell) return;
-
-  const row = Number(cell.dataset.row);
-  const col = Number(cell.dataset.col);
-  pushHistory();
-  if (drag.source.type === "cell") {
-    state.board[drag.source.row][drag.source.col].state = "empty";
-  }
-  const existing = state.board[row][col].state;
-  state.board[row][col].state = existing === "empty" ? drag.tokenState : "both";
-  state.selected = { row, col };
-  renderBoard();
-  renderSelection();
-  setMessage(`Hand placed token on ${ROWS[row].label} column ${col + 1}.`);
-}
-
-function isPinch(hand) {
-  const points = hand.raw;
-  if (!points?.length) return false;
-  return dist(points[4], points[8]) < 0.055;
-}
-
-function isFist(hand) {
-  const points = hand.raw;
-  if (!points?.length) return false;
-  const folded = [
-    points[8].y - points[6].y > 0.006,
-    points[12].y - points[10].y > 0.006,
-    points[16].y - points[14].y > 0.006,
-    points[20].y - points[18].y > 0.006
-  ].every(Boolean);
-
-  const compact = dist(points[8], points[20]) < dist(points[5], points[17]) + 0.1;
-  return folded && compact;
-}
-
-function drawHands(results) {
-  const width = refs.handOverlay.width;
-  const height = refs.handOverlay.height;
-  overlayCtx.clearRect(0, 0, width, height);
-  overlayCtx.lineCap = "round";
-  overlayCtx.lineJoin = "round";
-
-  for (const landmarks of results?.landmarks ?? []) {
-    const mirrored = landmarks.map((p) => ({
-      x: (1 - p.x) * width,
-      y: p.y * height
-    }));
-    const palm = palmCenter(landmarks);
-    const color = 1 - palm.x < 0.5 ? "#f0c46d" : "#ffb43f";
-
-    overlayCtx.strokeStyle = color;
-    overlayCtx.fillStyle = color;
-    overlayCtx.lineWidth = 3;
-    overlayCtx.shadowColor = color;
-    overlayCtx.shadowBlur = 10;
-
-    for (const [a, b] of HAND_CONNECTIONS) {
-      overlayCtx.beginPath();
-      overlayCtx.moveTo(mirrored[a].x, mirrored[a].y);
-      overlayCtx.lineTo(mirrored[b].x, mirrored[b].y);
-      overlayCtx.stroke();
-    }
-
-    for (const point of mirrored) {
-      overlayCtx.beginPath();
-      overlayCtx.arc(point.x, point.y, 4, 0, Math.PI * 2);
-      overlayCtx.fill();
-    }
-  }
-  overlayCtx.shadowBlur = 0;
 }
 
 function updateMeter() {

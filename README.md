@@ -1,6 +1,6 @@
 # Air Beat Board
 
-Air Beat Board is a browser-based musical instrument built around a tactile 5-row by 8-column sequencer. It turns a wooden tabletop-style board into a playable rhythm and sample device with procedural sounds, local sample import, row controls, and optional webcam hand tracking.
+Air Beat Board is a browser-based musical instrument built around a tactile 5-row by 8-column sequencer. It turns a wooden tabletop-style board into a playable rhythm and sample device with procedural sounds, local sample import, and row controls.
 
 The app is deliberately static: no framework, no package manager, no build step. Open it from a local web server and it runs in the browser.
 
@@ -20,7 +20,6 @@ The app is deliberately static: no framework, no package manager, no build step.
 - Provides per-row controls for volume, pitch, effect send, mute, and A/B sample slot selection.
 - Provides global controls for play/stop, BPM, swing, loop length, kit, and master level.
 - Supports mouse and touch as the primary interaction model.
-- Adds optional webcam hand tracking as an expressive control layer.
 
 ## Interaction Model
 
@@ -46,20 +45,6 @@ empty -> first -> second -> both -> empty
 ```
 
 You can also select a cell and use the Cell State buttons to set the state directly.
-
-## Hand Tracking
-
-Hand tracking is optional. The app remains fully usable without camera permission.
-
-When enabled, the camera panel uses MediaPipe Hand Landmarker to detect hands from the webcam feed.
-
-Gestures:
-
-- Open hand: move a cursor.
-- Pinch: grab or place a token.
-- Fist: flip the selected token between first and second timing.
-
-Camera access only starts after pressing **Start camera**. If camera permission is denied or unavailable, the manual mouse/touch workflow continues to work.
 
 ## Audio Engine
 
@@ -100,14 +85,7 @@ A local server is required because the app loads JavaScript modules and uses bro
 Recommended:
 
 - A recent Chromium-based browser, Safari, or Firefox.
-- `localhost` or another secure context for camera access.
 - Speakers or headphones.
-
-Optional camera mode requires:
-
-- Webcam access.
-- Browser support for `navigator.mediaDevices.getUserMedia`.
-- Network access to load the MediaPipe model and WASM assets from the configured CDN URLs.
 
 ## File Structure
 
@@ -128,7 +106,6 @@ Included in this version:
 - Static browser app.
 - Warm wooden board interface.
 - Mouse and touch composition.
-- Optional webcam hand tracking.
 - Procedural built-in kit.
 - Local sample import.
 - Per-row channel controls.
@@ -161,13 +138,10 @@ Manual browser checks:
 - Confirm the playhead advances through 16 internal steps.
 - Change BPM, swing, length, kit, master level, row volume, row pitch, row send, mute, and sample slot controls.
 - Import a local audio file and assign it to a row slot.
-- Start camera and confirm the app handles allowed, denied, and no-hand states cleanly.
 
 ## Privacy
 
-Audio files imported into the app stay local to the browser session.
-
-Camera frames are processed in the browser for hand tracking. The app does not include any server-side upload path.
+Audio files imported into the app stay local to the browser session. The app does not include any server-side upload path.
 
 ## License
 

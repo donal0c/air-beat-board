@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Air Beat Board</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23d99b45'/%3E%3Ccircle cx='32' cy='32' r='18' fill='%23201810'/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=board-focus-5" />
 </head>
 <body>
   <div class="app-shell">
@@ -70,44 +70,45 @@
     </header>
 
     <main class="workspace">
-      <section class="camera-panel" aria-label="Camera and hand tracking">
+      <section class="session-panel" aria-label="Session controls">
         <div class="panel-title">
           <div>
-            <span>Camera & hand tracking</span>
-            <strong id="cameraMode">Manual mode</strong>
-          </div>
-          <button id="cameraBtn" class="small-command" data-testid="camera-toggle">Start camera</button>
-        </div>
-
-        <div class="camera-stage">
-          <video id="webcam" autoplay playsinline muted></video>
-          <canvas id="handOverlay"></canvas>
-          <div id="cameraFallback" class="camera-fallback">
-            <span>Manual-first instrument</span>
-            <strong>Camera optional</strong>
-            <p>Start camera to control the board with hand tracking.</p>
-          </div>
-          <div id="leftCursor" class="hand-cursor left">L</div>
-          <div id="rightCursor" class="hand-cursor right">R</div>
-        </div>
-
-        <div class="tracking-readouts">
-          <div>
-            <span>Left hand</span>
-            <strong id="leftConfidence">not visible</strong>
-          </div>
-          <div>
-            <span>Right hand</span>
-            <strong id="rightConfidence">not visible</strong>
+            <span>Session</span>
+            <strong>Manual instrument</strong>
           </div>
         </div>
 
-        <div class="gesture-legend">
-          <div><span>Open hand</span><strong>Move cursor</strong></div>
-          <div><span>Pinch</span><strong>Grab / place</strong></div>
-          <div><span>Fist</span><strong>Flip token</strong></div>
-          <div><span>No camera</span><strong>Mouse works</strong></div>
-        </div>
+        <section class="session-card">
+          <span>Current loop</span>
+          <strong id="sessionKitReadout">Warm Studio</strong>
+          <div class="session-stats" aria-label="Current loop settings">
+            <div>
+              <span>BPM</span>
+              <strong id="sessionBpmReadout">128</strong>
+            </div>
+            <div>
+              <span>Len</span>
+              <strong id="sessionLengthReadout">16</strong>
+            </div>
+            <div>
+              <span>Swing</span>
+              <strong id="sessionSwingReadout">56%</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="session-focus">
+          <div class="section-head">
+            <span>Selected cell</span>
+            <strong id="sessionSelectedCell">Kick · Col 1</strong>
+          </div>
+          <div class="session-state-guide" aria-label="Token state reference">
+            <div data-state-key="empty"><i></i><span>Empty</span></div>
+            <div data-state-key="first"><i></i><span>First</span></div>
+            <div data-state-key="second"><i></i><span>Second</span></div>
+            <div data-state-key="both"><i></i><span>Both</span></div>
+          </div>
+        </section>
 
         <section class="left-actions">
           <div class="section-head"><span>Sample import</span><strong id="sampleStatus">Built-in kit</strong></div>
