@@ -1135,6 +1135,94 @@ body.dragging {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.left-actions .sample-action {
+  min-height: 44px;
+  font-size: 0.74rem;
+}
+
+/* Pattern slots */
+.slot-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.slot-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.slot-chip,
+.slot-action {
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 4px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.slot-action {
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  color: var(--text);
+}
+
+.slot-chip:hover,
+.slot-action:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  color: var(--text);
+}
+
+.slot-chip i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.slot-chip.filled i {
+  background: var(--muted);
+}
+
+.slot-chip.active {
+  color: var(--cyan);
+  border-color: rgba(240, 196, 109, 0.62);
+  background: rgba(240, 196, 109, 0.12);
+}
+
+.slot-chip.active i {
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+}
+
+.slot-chip.pending {
+  border-color: rgba(120, 255, 134, 0.6);
+  color: var(--green);
+}
+
+.slot-chip.pending i {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: slot-pulse 600ms ease-in-out infinite alternate;
+}
+
+@keyframes slot-pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
 /* Groove browser */
 .session-panel {
   min-height: 0;

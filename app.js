@@ -1,8 +1,9 @@
 // Entry point: collect DOM refs, wire the UI modules to the store and the
 // audio engine, seed the first board and start the meter loop.
 
-import { state, notify } from "./state.js";
-import { audio, loadGroove } from "./actions.js";
+import { state, notify, subscribe } from "./state.js";
+import { audio, loadGroove, launchPendingSlot } from "./actions.js";
+import { loadFromLocal, startAutosave } from "./storage.js";
 import { initBoard } from "./ui/board.js";
 import { initPanels } from "./ui/panels.js";
 import { initKeyboard } from "./ui/keyboard.js";
@@ -28,7 +29,12 @@ const refs = {
   sessionBpmReadout: $("#sessionBpmReadout"),
   sessionLengthReadout: $("#sessionLengthReadout"),
   sessionSwingReadout: $("#sessionSwingReadout"),
-  sessionSelectedCell: $("#sessionSelectedCell"),
+  slotList: $("#slotList"),
+  duplicateSlotBtn: $("#duplicateSlotBtn"),
+  exportBtn: $("#exportBtn"),
+  importSessionBtn: $("#importSessionBtn"),
+  sessionInput: $("#sessionInput"),
+  freshBtn: $("#freshBtn"),
   message: $("#message"),
   rowLabels: $("#rowLabels"),
   stepNumbers: $(".step-numbers"),
@@ -72,13 +78,19 @@ function startFrameLoop() {
 }
 
 function init() {
-  // Seed before the UI mounts so the first render already shows the groove.
-  loadGroove(state.groove, { silent: true });
-  state.message = { text: "Click cells to compose. Press play when the board looks alive.", undo: false };
+  // Restore the last session, or seed the default groove on a first visit.
+  if (loadFromLocal()) {
+    state.message = { text: "Welcome back. Your last session was restored.", undo: false };
+  } else {
+    loadGroove(state.groove, { silent: true });
+    state.message = { text: "Click cells to compose. Press play when the board looks alive.", undo: false };
+  }
 
   initPanels(refs);
   const board = initBoard(refs);
   audio.onStep = board.renderPlayhead;
+  audio.onBar = launchPendingSlot;
+  startAutosave(subscribe);
   initKeyboard({ focusSelectedCell: board.focusSelectedCell });
 
   notify();

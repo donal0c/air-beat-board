@@ -21,6 +21,8 @@ The app is deliberately static: no framework, no package manager, no build step.
 - Provides global controls for play/stop, BPM, swing, loop length, kit, and master level.
 - Ships six groove templates (Backbeat, House, Lo-Fi, Breakbeat, Minimal, Afro Swing) with Mutate, per-row Randomise and Reset.
 - Full undo/redo across the board, row settings and globals, plus keyboard shortcuts.
+- Autosaves the session to the browser, restores it on the next visit, and exports/imports it as JSON.
+- Four pattern slots (A to D) with duplicate and launch-on-next-bar switching.
 - Supports mouse and touch as the primary interaction model.
 
 ## Interaction Model
@@ -99,7 +101,8 @@ Recommended:
 ├── state.js          store, constants, notify/subscribe
 ├── actions.js        every user-level operation (the only state writers)
 ├── history.js        undo/redo snapshots
-├── grooves.js        groove templates, mutate, randomise
+├── grooves.js        groove templates, mutate, randomise, pattern codec
+├── storage.js        autosave, JSON export/import
 ├── audio/
 │   ├── engine.js     AudioContext, master bus, lookahead scheduler
 │   ├── voices.js     procedural voices and sample playback
@@ -130,7 +133,6 @@ Not included in this version:
 - Live microphone recording.
 - Account system.
 - Cloud sample library.
-- Project save/load.
 - MIDI output.
 - DAW plugin integration.
 
@@ -155,7 +157,7 @@ Manual browser checks:
 
 ## Privacy
 
-Audio files imported into the app stay local to the browser session. The app does not include any server-side upload path.
+Audio files imported into the app stay local to the browser session. The app does not include any server-side upload path. The autosaved session lives in this browser's `localStorage` and records only sample file names, never the audio itself.
 
 ## License
 

@@ -8,8 +8,22 @@
 import { ROWS, COLS, STATE_ORDER, makeEmptyBoard } from "./state.js";
 
 const GLYPH = { ".": "empty", x: "first", o: "second", X: "both" };
+const GLYPH_OF = { empty: ".", first: "x", second: "o", both: "X" };
 
 const parse = (rows) => rows.map((row) => [...row].map((glyph) => ({ state: GLYPH[glyph] })));
+
+/** Board -> array of 8-character strings, one per row. */
+export function encodePattern(board) {
+  return board.map((row) => row.map((cell) => GLYPH_OF[cell.state] ?? ".").join(""));
+}
+
+/** Array of strings -> board. Unknown glyphs and short rows read as empty. */
+export function decodePattern(rows) {
+  return Array.from({ length: ROWS.length }, (_, r) => {
+    const text = typeof rows[r] === "string" ? rows[r] : "";
+    return Array.from({ length: COLS }, (_, c) => ({ state: GLYPH[text[c]] ?? "empty" }));
+  });
+}
 
 export const GROOVES = [
   {

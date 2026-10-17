@@ -67,7 +67,14 @@ export function initPanels(refs) {
   });
 
   const stateButtons = [...document.querySelectorAll(".state-btn")];
-  const stateGuide = [...document.querySelectorAll(".session-state-guide [data-state-key]")];
+  const SLOT_NAMES = ["A", "B", "C", "D"];
+  refs.slotList.innerHTML = SLOT_NAMES.map((name, index) => `
+    <button type="button" class="slot-chip" role="option" data-slot-index="${index}" aria-selected="false" title="Pattern ${name}">
+      <span>${name}</span><i></i>
+    </button>
+  `).join("");
+  const slotChips = [...refs.slotList.querySelectorAll("[data-slot-index]")];
+  const slotReadout = document.querySelector("#slotReadout");
   const inspectorTabs = [...document.querySelectorAll("[data-inspector-tab]")];
   const soundInputs = Object.fromEntries(
     SOUND_PARAMS.map((param) => [param, document.querySelector(`[data-sound-param="${param}"]`)])
@@ -112,6 +119,16 @@ export function initPanels(refs) {
     setText(refs.sampleStatus, state.sampleStatus);
 
     setText(refs.grooveReadout, getGroove(state.groove).name);
+
+    slotChips.forEach((chip, index) => {
+      const active = index === state.activeSlot;
+      chip.classList.toggle("active", active);
+      chip.classList.toggle("filled", active || Boolean(state.slots[index]));
+      chip.classList.toggle("pending", index === state.pendingSlot);
+      chip.setAttribute("aria-selected", String(active));
+    });
+    const pendingName = state.pendingSlot === null ? "" : ` → ${SLOT_NAMES[state.pendingSlot]}`;
+    setText(slotReadout, `${SLOT_NAMES[state.activeSlot]}${pendingName}`);
     grooveChips.forEach((chip) => {
       const active = chip.dataset.groove === state.groove;
       chip.classList.toggle("active", active);
@@ -129,10 +146,8 @@ export function initPanels(refs) {
     setText(refs.selectedReadout, `${label} · Col ${col + 1}`);
     setText(rowActionsLabel, `${label} row`);
     setText(refs.soundReadout, `${label} · Slot ${slot.toUpperCase()} ${rowState.sampleNames[slot]}`);
-    setText(refs.sessionSelectedCell, `${label} · Col ${col + 1} · ${describeState(cellState)}`);
 
     stateButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.state === cellState));
-    stateGuide.forEach((item) => item.classList.toggle("active", item.dataset.stateKey === cellState));
 
     const percent = (value) => Math.round(value * 100);
     setInputValue(soundInputs.gain, percent(rowState.gain));
@@ -220,6 +235,18 @@ export function initPanels(refs) {
     const chip = evt.target.closest("[data-groove]");
     if (chip) actions.loadGroove(chip.dataset.groove);
   });
+  refs.slotList.addEventListener("click", (evt) => {
+    const chip = evt.target.closest("[data-slot-index]");
+    if (chip) actions.selectSlot(Number(chip.dataset.slotIndex));
+  });
+  refs.duplicateSlotBtn.addEventListener("click", actions.duplicateSlot);
+  refs.exportBtn.addEventListener("click", actions.exportSession);
+  refs.importSessionBtn.addEventListener("click", () => refs.sessionInput.click());
+  refs.sessionInput.addEventListener("change", async () => {
+    await actions.importSession(refs.sessionInput.files?.[0]);
+    refs.sessionInput.value = "";
+  });
+  refs.freshBtn.addEventListener("click", actions.freshSession);
   refs.mutateBtn.addEventListener("click", actions.mutateBoard);
   refs.resetGrooveBtn.addEventListener("click", actions.resetGroove);
   refs.randomiseRowBtn.addEventListener("click", () => actions.randomiseRow(state.selected.row));

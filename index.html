@@ -97,16 +97,14 @@
           </div>
         </section>
 
-        <section class="session-focus">
+        <section class="session-focus session-patterns">
           <div class="section-head">
-            <span>Selected cell</span>
-            <strong id="sessionSelectedCell">Kick · Col 1</strong>
+            <span>Patterns</span>
+            <strong id="slotReadout">A</strong>
           </div>
-          <div class="session-state-guide" aria-label="Token state reference">
-            <div data-state-key="empty"><i></i><span>Empty</span></div>
-            <div data-state-key="first"><i></i><span>First</span></div>
-            <div data-state-key="second"><i></i><span>Second</span></div>
-            <div data-state-key="both"><i></i><span>Both</span></div>
+          <div class="slot-row">
+            <div id="slotList" class="slot-list" role="listbox" aria-label="Pattern slots"></div>
+            <button id="duplicateSlotBtn" class="slot-action" title="Copy this pattern into the next free slot">Dup</button>
           </div>
         </section>
 
@@ -123,13 +121,17 @@
         </section>
 
         <section class="left-actions">
-          <div class="section-head"><span>Sample import</span><strong id="sampleStatus">Built-in kit</strong></div>
+          <div class="section-head"><span>Session</span><strong id="sampleStatus">Built-in kit</strong></div>
           <div class="sample-actions">
             <button id="importBtn" class="sample-action">Import audio</button>
             <button id="undoBtn" class="sample-action">Undo</button>
             <button id="redoBtn" class="sample-action">Redo</button>
+            <button id="exportBtn" class="sample-action" title="Download this session as JSON">Export</button>
+            <button id="importSessionBtn" class="sample-action" title="Load a session JSON file">Import</button>
+            <button id="freshBtn" class="sample-action" title="Forget the saved session">Fresh</button>
           </div>
           <input id="sampleInput" type="file" accept="audio/*" hidden />
+          <input id="sessionInput" type="file" accept="application/json,.json" hidden />
           <p class="shortcut-hint" aria-label="Keyboard shortcuts">
             <kbd>Space</kbd> play · <kbd>Esc</kbd> stop · <kbd>←↑→↓</kbd> move ·
             <kbd>1</kbd>–<kbd>4</kbd> state · <kbd>M</kbd> mute · <kbd>⌘Z</kbd> undo

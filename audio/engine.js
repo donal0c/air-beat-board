@@ -27,6 +27,8 @@ export class AirBeatAudio {
     this.visualQueue = [];
     /** Called with the step index when the playhead should move. */
     this.onStep = null;
+    /** Called just before step 0 of each loop is scheduled. */
+    this.onBar = null;
   }
 
   async ensure() {
@@ -105,6 +107,7 @@ export class AirBeatAudio {
 
     while (this.nextStepTime < this.ac.currentTime + LOOKAHEAD_S) {
       const step = this.step % state.length;
+      if (step === 0) this.onBar?.();
       const swingOffset = step % 2 === 1 ? stepDur * (state.swing - 0.5) * 0.72 : 0;
       const fireAt = this.nextStepTime + swingOffset;
       this.scheduleStep(step, fireAt);

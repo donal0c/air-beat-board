@@ -102,10 +102,10 @@ The cells are already buttons, so this is cheap.
 
 ### 1.9 Save / load / share
 
-- [ ] Autosave the full snapshot to `localStorage` on every history push.
+- [x] Autosave the full snapshot to `localStorage` on every history push.
       Restore on load, with a "Fresh board" link in the Session panel.
-- [ ] Export / import JSON through the Session panel.
-- [ ] 4 pattern slots (A to D) in the Session panel. Copy, clear, and switch
+- [x] Export / import JSON through the Session panel.
+- [x] 4 pattern slots (A to D) in the Session panel. Copy, clear, and switch
       on the next bar when playing.
 
 ---

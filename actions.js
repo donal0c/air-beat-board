@@ -3,12 +3,13 @@
 
 import {
   state, ROWS, STATE_ORDER, BPM_MIN, BPM_MAX, SWING_MAX,
-  makeEmptyBoard, describeState, boardIsEmpty, clamp, notify
+  makeEmptyBoard, cloneBoard, describeState, boardIsEmpty, clamp, notify
 } from "./state.js";
 import { pushHistory, undo as historyUndo, redo as historyRedo } from "./history.js";
 import { KITS } from "./audio/kits.js";
 import { getGroove, patternFromGroove, mutateBoard as mutatePattern, randomiseRow as randomisePattern, resetRow as resetPatternRow } from "./grooves.js";
 import { AirBeatAudio } from "./audio/engine.js";
+import { saveToLocal, clearLocal, downloadSession, readSessionFile } from "./storage.js";
 
 export const audio = new AirBeatAudio();
 
@@ -259,6 +260,123 @@ export function setSlot(row, slot) {
   state.rows[row].slot = slot;
   state.message = { text: `${ROWS[row].label} using sample slot ${slot.toUpperCase()}.`, undo: false };
   notify();
+}
+
+// ---------------------------------------------------------------- slots
+
+const SLOT_NAMES = ["A", "B", "C", "D"];
+
+function captureActiveSlot() {
+  state.slots[state.activeSlot] = { board: cloneBoard(state.board), groove: state.groove, length: state.length };
+}
+
+function applySlot(index) {
+  captureActiveSlot();
+  const target = state.slots[index];
+  state.activeSlot = index;
+  state.pendingSlot = null;
+  if (target) {
+    state.board = cloneBoard(target.board);
+    state.groove = target.groove;
+    state.length = target.length;
+  } else {
+    state.board = makeEmptyBoard();
+  }
+}
+
+/**
+ * Switch to pattern slot `index`. While playing, the switch waits for the
+ * next bar so the loop never stutters mid-phrase.
+ */
+export function selectSlot(index) {
+  if (index === state.activeSlot) {
+    state.pendingSlot = null;
+    notify();
+    return;
+  }
+  if (state.playing) {
+    state.pendingSlot = index;
+    state.message = { text: `Pattern ${SLOT_NAMES[index]} launches on the next bar.`, undo: false };
+    notify();
+    return;
+  }
+  pushHistory();
+  applySlot(index);
+  state.message = {
+    text: state.slots[index] ? `Pattern ${SLOT_NAMES[index]}.` : `Pattern ${SLOT_NAMES[index]} is empty. Build something or duplicate another slot.`,
+    undo: false
+  };
+  notify();
+}
+
+/** Called by the engine at the top of each bar. */
+export function launchPendingSlot() {
+  if (state.pendingSlot === null) return;
+  pushHistory();
+  const index = state.pendingSlot;
+  applySlot(index);
+  state.message = { text: `Pattern ${SLOT_NAMES[index]}.`, undo: false };
+  notify();
+}
+
+/** Copy the live board into the next empty slot (or the next slot) and go there. */
+export function duplicateSlot() {
+  const count = state.slots.length;
+  let target = -1;
+  for (let i = 1; i < count; i += 1) {
+    const candidate = (state.activeSlot + i) % count;
+    if (!state.slots[candidate]) {
+      target = candidate;
+      break;
+    }
+  }
+  if (target === -1) target = (state.activeSlot + 1) % count;
+  pushHistory();
+  captureActiveSlot();
+  state.slots[target] = { board: cloneBoard(state.board), groove: state.groove, length: state.length };
+  state.activeSlot = target;
+  state.pendingSlot = null;
+  state.message = { text: `Copied to pattern ${SLOT_NAMES[target]}. Edit it freely; ${SLOT_NAMES[(target + count - 1) % count]} is untouched.`, undo: false };
+  notify();
+}
+
+// -------------------------------------------------------------- sessions
+
+export function exportSession() {
+  captureActiveSlot();
+  downloadSession();
+  state.message = { text: "Session saved as a JSON file. Import it anywhere to continue.", undo: false };
+  notify();
+}
+
+export async function importSession(file) {
+  if (!file) return;
+  pushHistory();
+  try {
+    await readSessionFile(file);
+    audio.setMaster(state.master);
+    state.selected = { row: 0, col: 0 };
+    state.message = { text: `Loaded ${file.name}. Imported samples need re-importing.`, undo: true };
+  } catch (error) {
+    console.error(error);
+    historyUndo();
+    state.message = { text: `Could not read ${file.name}: ${error.message}`, undo: false };
+  }
+  notify();
+}
+
+/** Forget the saved session and start from the default groove. */
+export function freshSession() {
+  pushHistory();
+  clearLocal();
+  state.board = patternFromGroove("backbeat");
+  state.groove = "backbeat";
+  state.slots = [null, null, null, null];
+  state.activeSlot = 0;
+  state.pendingSlot = null;
+  state.message = { text: "Fresh board. The previous session is gone from this browser (Undo brings it back for now).", undo: true };
+  notify();
+  saveToLocal();
 }
 
 export async function importSample(file) {

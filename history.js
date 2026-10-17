@@ -14,6 +14,8 @@ const future = [];
 let lastKey = null;
 let lastTime = 0;
 
+const cloneSlot = (slot) => (slot ? { ...slot, board: cloneBoard(slot.board) } : null);
+
 const cloneRow = (row) => ({
   ...row,
   samples: { ...row.samples },
@@ -30,7 +32,9 @@ export function snapshot() {
     length: state.length,
     kit: state.kit,
     groove: state.groove,
-    master: state.master
+    master: state.master,
+    slots: state.slots.map(cloneSlot),
+    activeSlot: state.activeSlot
   };
 }
 
@@ -44,6 +48,9 @@ export function restore(snap) {
   state.kit = snap.kit;
   state.groove = snap.groove;
   state.master = snap.master;
+  state.slots = snap.slots.map(cloneSlot);
+  state.activeSlot = snap.activeSlot;
+  state.pendingSlot = null;
   state.selected = {
     row: Math.min(state.selected.row, state.board.length - 1),
     col: Math.min(state.selected.col, state.board[0].length - 1)

@@ -70,6 +70,11 @@ export const state = {
   kit: "warm",
   groove: "backbeat",
   master: 0.82,
+  /** Pattern slots A to D. The active slot's content is the live board. */
+  slots: [null, null, null, null],
+  activeSlot: 0,
+  /** Slot queued to launch on the next bar while playing. */
+  pendingSlot: null,
   inspectorTab: "cell",
   rows: ROWS.map(makeRowState),
   message: { text: "", undo: false },
