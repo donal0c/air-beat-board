@@ -117,27 +117,27 @@ things the eye cannot currently read.
 
 ### 2.1 Playhead you can see
 
-- [ ] A vertical amber light bar that slides across the grid-frame (one
-      absolutely positioned element, `transform: translateX`, not 40 class
-      toggles). Soft glow, 2 to 3px wide, sits between the step numbers and
-      the grid so it does not hide tokens.
-- [ ] The step number of the current column lights up amber.
-- [ ] Hit cells get a short 120ms token "press" animation (scale 0.92 then
+- [x] A light column that slides across the grid (one absolutely positioned
+      element, `transform: translateX`). Deep burnt-orange with a 3px leading
+      edge: plain amber has almost no luminance contrast on light maple, so
+      the playhead and hit rings are darker than the wood, not brighter.
+- [x] The step number of the current column lights up amber.
+- [x] Hit cells get a short 120ms token "press" animation (scale 0.92 then
       back) plus the existing inset glow, so a hit is visible on the token
       itself, not only the cell background.
-- [ ] Drive the bar from the audio clock in the rAF loop (Phase 3.3) so it
+- [x] Drive the bar from the audio clock in the rAF loop (Phase 3.3) so it
       never drifts from the sound.
 
 ### 2.2 Selected cell and focus
 
-- [ ] Selected cell: thin brass inset ring (2px, `--amber` at 80%) plus a
+- [x] Selected cell: thin brass inset ring (2px, `--amber` at 80%) plus a
       subtle lift on the token. The same treatment doubles as the keyboard
       focus ring.
-- [ ] Row label of the selected row gets the same brass tint.
+- [x] Row label of the selected row gets the same brass tint.
 
 ### 2.3 Outside-length columns
 
-- [ ] Darken more (around 45% instead of 26%), add a faint diagonal grain
+- [x] Darken more (around 45% instead of 26%), add a faint diagonal grain
       hatch, and dim the step number. Still wood, clearly "off".
 
 ### 2.4 Mobile layout (375px to 820px)
@@ -159,7 +159,7 @@ things the eye cannot currently read.
       dashed inset ring on a valid drop target.
 - [ ] First-run hint: a one-line strip under the board explaining the four
       token states, dismissed forever on first click.
-- [ ] `prefers-reduced-motion` turns off glow pulses and the press animation.
+- [x] `prefers-reduced-motion` turns off glow pulses and the press animation.
 - [ ] Run Lighthouse accessibility; aim for 100. Contrast on `--dim` text
       and the step numbers will need a nudge.
 
@@ -199,7 +199,7 @@ storage.js        localStorage, JSON export/import
 
 ### 3.3 Scheduler and visuals
 
-- [ ] Keep the lookahead scheduler. Replace per-step `setTimeout` visuals
+- [x] Keep the lookahead scheduler. Replace per-step `setTimeout` visuals
       with a queue of `{ step, time }` drained in the rAF loop against
       `ac.currentTime`. Clear the queue on stop.
 - [x] Reuse the distortion curve per drive value (cache by rounded amount)

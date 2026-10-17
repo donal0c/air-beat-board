@@ -30,6 +30,7 @@ const refs = {
   sessionSelectedCell: $("#sessionSelectedCell"),
   message: $("#message"),
   rowLabels: $("#rowLabels"),
+  stepNumbers: $(".step-numbers"),
   beatGrid: $("#beatGrid"),
   channelStrips: $("#channelStrips"),
   tokenTray: $("#tokenTray"),
@@ -53,8 +54,9 @@ const refs = {
   sampleStatus: $("#sampleStatus")
 };
 
-function startMeter() {
+function startFrameLoop() {
   const tick = () => {
+    audio.pollVisuals();
     const level = audio.tickMeter();
     refs.masterMeter.style.height = `${Math.round((0.08 + level * 0.92) * 100)}%`;
     requestAnimationFrame(tick);
@@ -72,7 +74,7 @@ function init() {
   audio.onStep = board.renderPlayhead;
 
   notify();
-  startMeter();
+  startFrameLoop();
 }
 
 init();

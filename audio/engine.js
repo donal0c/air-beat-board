@@ -23,6 +23,8 @@ export class AirBeatAudio {
     this.step = 0;
     this.nextStepTime = 0;
     this.level = 0;
+    /** Steps already scheduled for audio, waiting for their visual moment. */
+    this.visualQueue = [];
     /** Called with the step index when the playhead should move. */
     this.onStep = null;
   }
@@ -88,6 +90,7 @@ export class AirBeatAudio {
       clearInterval(this.timer);
       this.timer = null;
     }
+    this.visualQueue.length = 0;
   }
 
   reset() {
@@ -112,15 +115,26 @@ export class AirBeatAudio {
     }
   }
 
-  // Visual playhead still rides on setTimeout; A_PLUS_PLAN 3.3 moves it to
-  // a time-stamped queue drained from the rAF loop.
   queueVisualStep(step, t) {
-    const delay = Math.max(0, (t - this.ac.currentTime) * 1000);
-    setTimeout(() => {
-      if (!state.playing) return;
-      state.currentStep = step;
-      this.onStep?.(step);
-    }, delay);
+    this.visualQueue.push({ step, time: t });
+  }
+
+  /**
+   * Drain every queued step whose audio time has passed and move the
+   * playhead to the latest one. Called once per animation frame, so the
+   * visual stays locked to the audio clock instead of a timer.
+   */
+  pollVisuals() {
+    if (!this.ac || !state.playing || this.visualQueue.length === 0) return;
+    const now = this.ac.currentTime;
+    let latest = null;
+    while (this.visualQueue.length && this.visualQueue[0].time <= now) {
+      latest = this.visualQueue.shift();
+    }
+    if (latest && latest.step !== state.currentStep) {
+      state.currentStep = latest.step;
+      this.onStep?.(latest.step);
+    }
   }
 
   scheduleStep(step, t) {

@@ -679,29 +679,150 @@ body.dragging {
   transition: background 120ms ease, box-shadow 120ms ease;
 }
 
-.cell:nth-child(8n) {
+.cell:nth-of-type(8n) {
   border-right: 0;
 }
 
-.cell:nth-child(n + 33) {
+.cell:nth-of-type(n + 33) {
   border-bottom: 0;
 }
 
-.cell.selected {
-  background: rgba(240, 196, 109, 0.16);
-  box-shadow: inset 0 0 0 2px rgba(240, 196, 109, 0.82), 0 0 22px rgba(240, 196, 109, 0.18);
+.cell {
+  outline: none;
+}
+
+/* Brass inset ring: the selected cell and the keyboard focus ring share it. */
+.cell.selected,
+.cell:focus-visible {
+  background: rgba(255, 214, 140, 0.12);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 184, 70, 0.88),
+    inset 0 0 0 3px rgba(70, 36, 10, 0.55),
+    inset 0 0 18px rgba(255, 180, 63, 0.18);
+}
+
+.cell.selected > .token,
+.cell:focus-visible > .token {
+  transform: translate(-50%, -54%) scale(1.06);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.3),
+    inset 0 -6px 12px rgba(30, 14, 4, 0.32),
+    0 14px 16px rgba(40, 20, 8, 0.4);
 }
 
 .cell.play-col {
-  background: rgba(255, 177, 60, 0.16);
+  background: rgba(120, 52, 8, 0.07);
 }
 
+/* Hit cells: a deep-orange ring. Amber alone vanishes on light maple, so the
+   ring is darker than the wood and backed by a thin burnt edge. */
 .cell.play-hit {
-  box-shadow: inset 0 0 0 2px rgba(255, 180, 63, 0.78), 0 0 28px rgba(255, 180, 63, 0.44);
+  box-shadow:
+    inset 0 0 0 2px rgba(236, 110, 22, 0.95),
+    inset 0 0 0 3px rgba(80, 34, 6, 0.6),
+    inset 0 0 22px rgba(236, 110, 22, 0.3);
 }
 
+.cell.play-hit.selected {
+  box-shadow:
+    inset 0 0 0 2px rgba(236, 110, 22, 0.98),
+    inset 0 0 0 3px rgba(80, 34, 6, 0.7),
+    inset 0 0 26px rgba(236, 110, 22, 0.4);
+}
+
+.cell.play-hit > .token {
+  animation: token-press 140ms ease-out;
+}
+
+@keyframes token-press {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  35% { transform: translate(-50%, -47%) scale(0.9); filter: brightness(1.18); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.cell.selected.play-hit > .token {
+  animation-name: token-press-selected;
+}
+
+@keyframes token-press-selected {
+  0% { transform: translate(-50%, -54%) scale(1.06); }
+  35% { transform: translate(-50%, -50%) scale(0.96); filter: brightness(1.18); }
+  100% { transform: translate(-50%, -54%) scale(1.06); }
+}
+
+/* Columns beyond the loop length: darker wood with a faint grain hatch. */
 .cell.outside-length {
-  background: rgba(28, 20, 13, 0.26);
+  background:
+    repeating-linear-gradient(135deg, rgba(20, 12, 5, 0.14) 0 3px, transparent 3px 10px),
+    rgba(28, 20, 13, 0.46);
+}
+
+.cell.outside-length > .token {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.cell.outside-length.selected {
+  background:
+    repeating-linear-gradient(135deg, rgba(20, 12, 5, 0.14) 0 3px, transparent 3px 10px),
+    rgba(40, 28, 16, 0.46);
+}
+
+/* The playhead: an amber light column that sweeps the grid, driven from the
+   audio clock. Sits under the cells so tokens stay crisp above it. */
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 12.5%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, rgba(236, 110, 22, 0.3), rgba(160, 70, 12, 0.14) 45%, rgba(120, 52, 8, 0.05));
+  box-shadow:
+    inset 3px 0 0 rgba(255, 128, 24, 1),
+    inset 4px 0 0 rgba(70, 28, 4, 0.75),
+    inset -1px 0 0 rgba(70, 28, 4, 0.25),
+    0 0 26px rgba(236, 110, 22, 0.45);
+  transition: transform 60ms linear, opacity 180ms ease;
+}
+
+.beat-grid.playing .playhead {
+  opacity: 1;
+}
+
+.step-numbers span {
+  transition: color 120ms ease, text-shadow 120ms ease, opacity 120ms ease;
+}
+
+.step-numbers span.active {
+  color: #c24f00;
+  text-shadow: 0 0 10px rgba(255, 140, 40, 0.8), 0 0 2px rgba(255, 200, 120, 0.9);
+}
+
+.step-numbers span.outside {
+  opacity: 0.38;
+}
+
+.row-label.selected {
+  color: #5c3209;
+}
+
+.row-label.selected strong {
+  color: #8a4a0f;
+  text-shadow: 0 0 8px rgba(255, 180, 63, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playhead,
+  .step-numbers span,
+  .token,
+  .cell {
+    transition: none;
+  }
+  .cell.play-hit > .token {
+    animation: none;
+  }
 }
 
 .token {

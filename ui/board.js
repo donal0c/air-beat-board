@@ -12,7 +12,10 @@ export function initBoard(refs) {
   const tokens = [];
   const rendered = [];
   let rowLabels = [];
+  let stepNumbers = [];
   let lastPlayCol = -1;
+  let lastSelectedRow = -1;
+  let lastOutsideFrom = -1;
 
   // ---------------------------------------------------------- build once
 
@@ -25,7 +28,13 @@ export function initBoard(refs) {
   `).join("");
   rowLabels = [...refs.rowLabels.querySelectorAll("[data-row-label]")];
 
+  stepNumbers = [...refs.stepNumbers.querySelectorAll("span")];
+
   refs.beatGrid.innerHTML = "";
+  const playhead = document.createElement("div");
+  playhead.className = "playhead";
+  playhead.setAttribute("aria-hidden", "true");
+  refs.beatGrid.appendChild(playhead);
   for (let row = 0; row < ROWS.length; row += 1) {
     for (let col = 0; col < COLS; col += 1) {
       const cell = document.createElement("button");
@@ -72,6 +81,17 @@ export function initBoard(refs) {
         tokens[index].className = `token ${cellState}`;
       }
     }
+
+    if (selRow !== lastSelectedRow) {
+      rowLabels.forEach((label, row) => label.classList.toggle("selected", row === selRow));
+      lastSelectedRow = selRow;
+    }
+
+    const outsideFrom = Math.ceil(state.length / STEPS_PER_COL);
+    if (outsideFrom !== lastOutsideFrom) {
+      stepNumbers.forEach((span, col) => span.classList.toggle("outside", col >= outsideFrom));
+      lastOutsideFrom = outsideFrom;
+    }
   }
 
   /** Move the playhead highlight to `step` (-1 clears it). */
@@ -87,8 +107,19 @@ export function initBoard(refs) {
       for (let row = 0; row < ROWS.length; row += 1) {
         const cell = cells[cellIndex(row, playCol)];
         cell.classList.add("play-col");
-        cell.classList.toggle("play-hit", cellTriggersStep(row, step));
+        const hit = cellTriggersStep(row, step);
+        if (hit && cell.classList.contains("play-hit")) {
+          // Same cell hit on consecutive sixteenths: restart the press.
+          cell.classList.remove("play-hit");
+          void cell.offsetWidth;
+        }
+        cell.classList.toggle("play-hit", hit);
       }
+      playhead.style.transform = `translateX(${playCol * 100}%)`;
+    }
+    refs.beatGrid.classList.toggle("playing", playCol >= 0);
+    if (lastPlayCol !== playCol) {
+      stepNumbers.forEach((span, col) => span.classList.toggle("active", col === playCol));
     }
     lastPlayCol = playCol;
 
