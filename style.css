@@ -1132,7 +1132,30 @@ body.dragging {
 }
 
 .sample-actions {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shortcut-hint {
+  margin: 0;
+  color: var(--dim);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.shortcut-hint kbd {
+  display: inline-block;
+  min-width: 1.3em;
+  padding: 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .sample-action {

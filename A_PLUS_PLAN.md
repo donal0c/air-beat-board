@@ -62,21 +62,21 @@ Switching kits silently replaces the whole pattern.
 
 ### 1.4 Undo / redo that covers everything
 
-- [ ] Replace the board-only history with a snapshot of `board + rows +
+- [x] Replace the board-only history with a snapshot of `board + rows +
       globals` (one serialisable object, see Phase 3.1).
-- [ ] Add redo. Shortcuts: Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z.
-- [ ] Debounce slider changes into one history entry per gesture.
+- [x] Add redo. Shortcuts: Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z.
+- [x] Debounce slider changes into one history entry per gesture.
 
 ### 1.5 Keyboard support
 
 The cells are already buttons, so this is cheap.
 
-- [ ] Space: play/pause. Escape: stop and reset. Arrow keys move the selected
+- [x] Space: play/pause. Escape: stop and reset. Arrow keys move the selected
       cell. 1 to 4 set the selected cell state. M mutes the selected row.
-- [ ] Roving tabindex on the grid so Tab enters the board once and arrows
+- [x] Roving tabindex on the grid so Tab enters the board once and arrows
       move inside it.
-- [ ] Visible focus ring on cells (see Phase 2.2 for the design).
-- [ ] Make sure shortcuts do not fire while an input or select has focus.
+- [x] Visible focus ring on cells (see Phase 2.2 for the design).
+- [x] Make sure shortcuts do not fire while an input or select has focus.
 
 ### 1.6 Groove browser replaces "Seed pattern"
 

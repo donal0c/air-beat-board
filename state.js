@@ -71,7 +71,6 @@ export const state = {
   master: 0.82,
   inspectorTab: "cell",
   rows: ROWS.map(makeRowState),
-  history: [],
   message: { text: "", undo: false },
   sampleStatus: "Built-in kit"
 };

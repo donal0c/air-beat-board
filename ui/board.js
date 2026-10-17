@@ -43,6 +43,7 @@ export function initBoard(refs) {
       cell.dataset.row = String(row);
       cell.dataset.col = String(col);
       cell.dataset.testid = `cell-${row}-${col}`;
+      cell.tabIndex = -1;
       const token = document.createElement("span");
       token.className = "token empty";
       token.dataset.tokenCell = `${row}-${col}`;
@@ -76,6 +77,7 @@ export function initBoard(refs) {
 
         const cell = cells[index];
         cell.classList.toggle("selected", selected);
+        cell.tabIndex = selected ? 0 : -1;
         cell.classList.toggle("outside-length", outside);
         cell.setAttribute("aria-label", `${ROWS[row].label} column ${col + 1}, ${describeState(cellState)}`);
         tokens[index].className = `token ${cellState}`;
@@ -250,8 +252,14 @@ export function initBoard(refs) {
     cycleCell(Number(cell.dataset.row), Number(cell.dataset.col));
   });
 
+  /** Move keyboard focus to the selected cell (roving tabindex). */
+  function focusSelectedCell() {
+    const { row, col } = state.selected;
+    cells[cellIndex(row, col)].focus({ preventScroll: true });
+  }
+
   subscribe(render);
   render();
 
-  return { renderPlayhead };
+  return { renderPlayhead, focusSelectedCell };
 }

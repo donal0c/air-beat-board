@@ -116,8 +116,13 @@
             <button id="importBtn" class="sample-action">Import audio</button>
             <button id="randomizeBtn" class="sample-action">Seed pattern</button>
             <button id="undoBtn" class="sample-action">Undo</button>
+            <button id="redoBtn" class="sample-action">Redo</button>
           </div>
           <input id="sampleInput" type="file" accept="audio/*" hidden />
+          <p class="shortcut-hint" aria-label="Keyboard shortcuts">
+            <kbd>Space</kbd> play · <kbd>Esc</kbd> stop · <kbd>←↑→↓</kbd> move ·
+            <kbd>1</kbd>–<kbd>4</kbd> state · <kbd>M</kbd> mute · <kbd>⌘Z</kbd> undo
+          </p>
         </section>
 
         <div id="message" class="message-panel">Click cells to compose. Press play when the board looks alive.</div>

@@ -5,6 +5,7 @@ import { state, notify } from "./state.js";
 import { audio, seedPattern } from "./actions.js";
 import { initBoard } from "./ui/board.js";
 import { initPanels } from "./ui/panels.js";
+import { initKeyboard } from "./ui/keyboard.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -50,6 +51,7 @@ const refs = {
   importBtn: $("#importBtn"),
   randomizeBtn: $("#randomizeBtn"),
   undoBtn: $("#undoBtn"),
+  redoBtn: $("#redoBtn"),
   sampleInput: $("#sampleInput"),
   sampleStatus: $("#sampleStatus")
 };
@@ -72,6 +74,7 @@ function init() {
   initPanels(refs);
   const board = initBoard(refs);
   audio.onStep = board.renderPlayhead;
+  initKeyboard({ focusSelectedCell: board.focusSelectedCell });
 
   notify();
   startFrameLoop();

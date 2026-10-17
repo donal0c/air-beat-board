@@ -5,7 +5,7 @@ import {
   state, ROWS, STATE_ORDER, BPM_MIN, BPM_MAX, SWING_MAX,
   makeEmptyBoard, describeState, boardIsEmpty, clamp, notify
 } from "./state.js";
-import { pushHistory, popHistory } from "./history.js";
+import { pushHistory, undo as historyUndo, redo as historyRedo } from "./history.js";
 import { KITS, patternFromKit } from "./audio/kits.js";
 import { AirBeatAudio } from "./audio/engine.js";
 
@@ -89,14 +89,23 @@ export function clearBoard() {
   notify();
 }
 
-export function undoBoard() {
-  const previous = popHistory();
-  if (!previous) {
-    setMessage("No board changes to undo.");
+export function undo() {
+  if (!historyUndo()) {
+    setMessage("Nothing to undo.");
     return;
   }
-  state.board = previous;
-  state.message = { text: "Board change undone.", undo: false };
+  audio.setMaster(state.master);
+  state.message = { text: "Undone.", undo: false };
+  notify();
+}
+
+export function redo() {
+  if (!historyRedo()) {
+    setMessage("Nothing to redo.");
+    return;
+  }
+  audio.setMaster(state.master);
+  state.message = { text: "Redone.", undo: false };
   notify();
 }
 
@@ -130,8 +139,10 @@ export function stopAndReset() {
 
 export function setBpm(value) {
   const parsed = Number(value);
-  const next = Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : state.bpm;
-  state.bpm = clamp(next, BPM_MIN, BPM_MAX);
+  const next = clamp(Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : state.bpm, BPM_MIN, BPM_MAX);
+  if (next === state.bpm) return;
+  pushHistory({ coalesce: "bpm" });
+  state.bpm = next;
   notify();
 }
 
@@ -140,24 +151,30 @@ export function nudgeBpm(delta) {
 }
 
 export function setSwing(percent) {
+  pushHistory({ coalesce: "swing" });
   state.swing = clamp(Number(percent) / 100, 0, SWING_MAX);
   notify();
 }
 
 export function setLength(value) {
-  state.length = Number(value);
+  const next = Number(value);
+  if (next === state.length) return;
+  pushHistory({ coalesce: "length" });
+  state.length = next;
   notify();
 }
 
 /** Changing the kit only changes the sound. The board is kept. */
 export function setKit(key) {
-  if (!KITS[key]) return;
+  if (!KITS[key] || key === state.kit) return;
+  pushHistory();
   state.kit = key;
   state.message = { text: `${KITS[key].name} kit. Board kept; use Seed pattern to load its groove.`, undo: false };
   notify();
 }
 
 export function setMaster(percent) {
+  pushHistory({ coalesce: "master" });
   state.master = Number(percent) / 100;
   audio.setMaster(state.master);
   notify();
@@ -172,6 +189,7 @@ export function setInspectorTab(tab) {
 
 export function setSelectedRowParam(param, value) {
   const rowState = state.rows[state.selected.row];
+  pushHistory({ coalesce: `row-${state.selected.row}-${param}` });
   if (param === "gain") rowState.gain = value / 100;
   else if (param === "drive") rowState.drive = value / 100;
   else if (param === "tone") rowState.tone = value / 100;
@@ -184,23 +202,28 @@ export function setSelectedRowParam(param, value) {
 }
 
 export function setRowVolume(row, percent) {
+  pushHistory({ coalesce: `row-${row}-volume` });
   state.rows[row].volume = Number(percent) / 100;
   notify();
 }
 
 export function setRowColor(row, percent) {
+  pushHistory({ coalesce: `row-${row}-color` });
   state.rows[row].color = Number(percent) / 100;
   notify();
 }
 
 export function toggleMute(row) {
   const rowState = state.rows[row];
+  pushHistory();
   rowState.muted = !rowState.muted;
   state.message = { text: `${ROWS[row].label} ${rowState.muted ? "muted" : "back in"}.`, undo: false };
   notify();
 }
 
 export function setSlot(row, slot) {
+  if (state.rows[row].slot === slot) return;
+  pushHistory();
   state.rows[row].slot = slot;
   state.message = { text: `${ROWS[row].label} using sample slot ${slot.toUpperCase()}.`, undo: false };
   notify();
@@ -214,6 +237,7 @@ export async function importSample(file) {
     const buffer = await audio.ac.decodeAudioData(arrayBuffer);
     const row = state.selected.row;
     const slot = state.rows[row].slot;
+    pushHistory();
     state.rows[row].samples[slot] = buffer;
     state.rows[row].sampleNames[slot] = file.name;
     state.sampleStatus = `${ROWS[row].label} ${slot.toUpperCase()}: ${file.name}`;

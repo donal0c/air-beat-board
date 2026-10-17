@@ -166,7 +166,7 @@ export function initPanels(refs) {
       button.type = "button";
       button.className = "message-undo";
       button.textContent = "Undo";
-      button.addEventListener("click", actions.undoBoard);
+      button.addEventListener("click", actions.undo);
       refs.message.append(" ", button);
     }
   }
@@ -202,7 +202,8 @@ export function initPanels(refs) {
   refs.stopBtn.addEventListener("click", actions.stopAndReset);
   refs.clearBtn.addEventListener("click", actions.clearBoard);
   refs.randomizeBtn.addEventListener("click", () => actions.seedPattern(state.kit));
-  refs.undoBtn.addEventListener("click", actions.undoBoard);
+  refs.undoBtn.addEventListener("click", actions.undo);
+  refs.redoBtn.addEventListener("click", actions.redo);
   refs.importBtn.addEventListener("click", () => refs.sampleInput.click());
   refs.sampleInput.addEventListener("change", async () => {
     await actions.importSample(refs.sampleInput.files?.[0]);
