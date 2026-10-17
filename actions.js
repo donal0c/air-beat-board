@@ -6,7 +6,8 @@ import {
   makeEmptyBoard, describeState, boardIsEmpty, clamp, notify
 } from "./state.js";
 import { pushHistory, undo as historyUndo, redo as historyRedo } from "./history.js";
-import { KITS, patternFromKit } from "./audio/kits.js";
+import { KITS } from "./audio/kits.js";
+import { getGroove, patternFromGroove, mutateBoard as mutatePattern, randomiseRow as randomisePattern, resetRow as resetPatternRow } from "./grooves.js";
 import { AirBeatAudio } from "./audio/engine.js";
 
 export const audio = new AirBeatAudio();
@@ -69,15 +70,46 @@ export function dropToken(source, tokenState, row, col) {
   notify();
 }
 
-export function seedPattern(key = state.kit, options = {}) {
+export function loadGroove(id, options = {}) {
+  const groove = getGroove(id);
   const replaced = !boardIsEmpty();
-  pushHistory();
-  state.board = patternFromKit(key);
+  if (!options.silent) pushHistory();
+  state.board = patternFromGroove(groove.id);
+  state.groove = groove.id;
   if (!options.silent) {
     state.message = replaced
-      ? { text: `${KITS[key].name} pattern replaced your board.`, undo: true }
-      : { text: `${KITS[key].name} pattern loaded.`, undo: false };
+      ? { text: `${groove.name} replaced your board. ${groove.hint}`, undo: true }
+      : { text: `${groove.name} loaded. ${groove.hint}`, undo: false };
   }
+  notify();
+}
+
+export function mutateBoard() {
+  pushHistory();
+  const changed = mutatePattern(state.board);
+  state.message = { text: `Mutated ${changed} cell${changed === 1 ? "" : "s"}. Kick and snare anchors kept.`, undo: false };
+  notify();
+}
+
+export function randomiseRow(row) {
+  pushHistory();
+  randomisePattern(state.board, row);
+  state.message = { text: `${ROWS[row].label} randomised. Undo if it lost the groove.`, undo: false };
+  notify();
+}
+
+export function resetRow(row) {
+  pushHistory();
+  resetPatternRow(state.board, row, state.groove);
+  state.message = { text: `${ROWS[row].label} reset to ${getGroove(state.groove).name}.`, undo: false };
+  notify();
+}
+
+export function resetGroove() {
+  const groove = getGroove(state.groove);
+  pushHistory();
+  state.board = patternFromGroove(groove.id);
+  state.message = { text: `Board reset to ${groove.name}.`, undo: true };
   notify();
 }
 
@@ -169,7 +201,7 @@ export function setKit(key) {
   if (!KITS[key] || key === state.kit) return;
   pushHistory();
   state.kit = key;
-  state.message = { text: `${KITS[key].name} kit. Board kept; use Seed pattern to load its groove.`, undo: false };
+  state.message = { text: `${KITS[key].name} kit. Board kept; pick a groove to replace it.`, undo: false };
   notify();
 }
 

@@ -2,7 +2,7 @@
 // audio engine, seed the first board and start the meter loop.
 
 import { state, notify } from "./state.js";
-import { audio, seedPattern } from "./actions.js";
+import { audio, loadGroove } from "./actions.js";
 import { initBoard } from "./ui/board.js";
 import { initPanels } from "./ui/panels.js";
 import { initKeyboard } from "./ui/keyboard.js";
@@ -49,7 +49,12 @@ const refs = {
   rowSendValue: $("#rowSendValue"),
   clearBtn: $("#clearBtn"),
   importBtn: $("#importBtn"),
-  randomizeBtn: $("#randomizeBtn"),
+  grooveList: $("#grooveList"),
+  grooveReadout: $("#grooveReadout"),
+  mutateBtn: $("#mutateBtn"),
+  resetGrooveBtn: $("#resetGrooveBtn"),
+  randomiseRowBtn: $("#randomiseRowBtn"),
+  resetRowBtn: $("#resetRowBtn"),
   undoBtn: $("#undoBtn"),
   redoBtn: $("#redoBtn"),
   sampleInput: $("#sampleInput"),
@@ -68,7 +73,7 @@ function startFrameLoop() {
 
 function init() {
   // Seed before the UI mounts so the first render already shows the groove.
-  seedPattern("warm", { silent: true });
+  loadGroove(state.groove, { silent: true });
   state.message = { text: "Click cells to compose. Press play when the board looks alive.", undo: false };
 
   initPanels(refs);

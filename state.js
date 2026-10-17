@@ -68,6 +68,7 @@ export const state = {
   swing: 0.56,
   length: MAX_STEPS,
   kit: "warm",
+  groove: "backbeat",
   master: 0.82,
   inspectorTab: "cell",
   rows: ROWS.map(makeRowState),

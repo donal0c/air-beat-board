@@ -29,6 +29,7 @@ export function snapshot() {
     swing: state.swing,
     length: state.length,
     kit: state.kit,
+    groove: state.groove,
     master: state.master
   };
 }
@@ -41,6 +42,7 @@ export function restore(snap) {
   state.swing = snap.swing;
   state.length = snap.length;
   state.kit = snap.kit;
+  state.groove = snap.groove;
   state.master = snap.master;
   state.selected = {
     row: Math.min(state.selected.row, state.board.length - 1),

@@ -80,11 +80,11 @@ The cells are already buttons, so this is cheap.
 
 ### 1.6 Groove browser replaces "Seed pattern"
 
-- [ ] Small list in the Session panel: Backbeat, House, Lo-Fi, Breakbeat,
+- [x] Small list in the Session panel: Backbeat, House, Lo-Fi, Breakbeat,
       Minimal, Afro Swing. Each is a 5x8 pattern in `grooves.js`.
-- [ ] "Mutate" button changes 2 to 4 cells while keeping kick and snare
+- [x] "Mutate" button changes 2 to 4 cells while keeping kick and snare
       anchors. "Randomise row" per channel strip.
-- [ ] All of these push history and are undoable.
+- [x] All of these push history and are undoable.
 
 ### 1.7 Clean up the two volume controls
 

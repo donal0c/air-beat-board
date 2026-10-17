@@ -3,6 +3,7 @@
 
 import { state, ROWS, describeState, subscribe } from "../state.js";
 import { KITS } from "../audio/kits.js";
+import { GROOVES, getGroove } from "../grooves.js";
 import * as actions from "../actions.js";
 
 const SOUND_PARAMS = ["gain", "drive", "tone", "decay", "pan", "pitch", "send"];
@@ -46,6 +47,12 @@ export function initPanels(refs) {
       </div>
     </div>
   `).join("");
+
+  refs.grooveList.innerHTML = GROOVES.map((groove) => `
+    <button type="button" class="groove-chip" role="option" data-groove="${groove.id}" title="${groove.hint}" aria-selected="false">${groove.name}</button>
+  `).join("");
+  const grooveChips = [...refs.grooveList.querySelectorAll("[data-groove]")];
+  const rowActionsLabel = document.querySelector("#rowActionsLabel");
 
   const strips = ROWS.map((_, index) => {
     const root = refs.channelStrips.querySelector(`.channel-strip[data-row="${index}"]`);
@@ -103,6 +110,13 @@ export function initPanels(refs) {
     setText(refs.sessionLengthReadout, String(state.length));
     setText(refs.sessionSwingReadout, `${swingPercent}%`);
     setText(refs.sampleStatus, state.sampleStatus);
+
+    setText(refs.grooveReadout, getGroove(state.groove).name);
+    grooveChips.forEach((chip) => {
+      const active = chip.dataset.groove === state.groove;
+      chip.classList.toggle("active", active);
+      chip.setAttribute("aria-selected", String(active));
+    });
   }
 
   function renderSelection() {
@@ -113,6 +127,7 @@ export function initPanels(refs) {
     const label = ROWS[row].label;
 
     setText(refs.selectedReadout, `${label} · Col ${col + 1}`);
+    setText(rowActionsLabel, `${label} row`);
     setText(refs.soundReadout, `${label} · Slot ${slot.toUpperCase()} ${rowState.sampleNames[slot]}`);
     setText(refs.sessionSelectedCell, `${label} · Col ${col + 1} · ${describeState(cellState)}`);
 
@@ -201,7 +216,14 @@ export function initPanels(refs) {
   refs.bigPlayBtn.addEventListener("click", actions.togglePlayback);
   refs.stopBtn.addEventListener("click", actions.stopAndReset);
   refs.clearBtn.addEventListener("click", actions.clearBoard);
-  refs.randomizeBtn.addEventListener("click", () => actions.seedPattern(state.kit));
+  refs.grooveList.addEventListener("click", (evt) => {
+    const chip = evt.target.closest("[data-groove]");
+    if (chip) actions.loadGroove(chip.dataset.groove);
+  });
+  refs.mutateBtn.addEventListener("click", actions.mutateBoard);
+  refs.resetGrooveBtn.addEventListener("click", actions.resetGroove);
+  refs.randomiseRowBtn.addEventListener("click", () => actions.randomiseRow(state.selected.row));
+  refs.resetRowBtn.addEventListener("click", () => actions.resetRow(state.selected.row));
   refs.undoBtn.addEventListener("click", actions.undo);
   refs.redoBtn.addEventListener("click", actions.redo);
   refs.importBtn.addEventListener("click", () => refs.sampleInput.click());

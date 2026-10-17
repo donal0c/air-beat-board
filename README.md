@@ -19,6 +19,8 @@ The app is deliberately static: no framework, no package manager, no build step.
 - Supports local audio sample import with `decodeAudioData`.
 - Provides per-row controls for volume, pitch, effect send, mute, and A/B sample slot selection.
 - Provides global controls for play/stop, BPM, swing, loop length, kit, and master level.
+- Ships six groove templates (Backbeat, House, Lo-Fi, Breakbeat, Minimal, Afro Swing) with Mutate, per-row Randomise and Reset.
+- Full undo/redo across the board, row settings and globals, plus keyboard shortcuts.
 - Supports mouse and touch as the primary interaction model.
 
 ## Interaction Model
@@ -96,14 +98,16 @@ Recommended:
 ├── app.js            entry: DOM refs, wiring, meter loop
 ├── state.js          store, constants, notify/subscribe
 ├── actions.js        every user-level operation (the only state writers)
-├── history.js        undo stack
+├── history.js        undo/redo snapshots
+├── grooves.js        groove templates, mutate, randomise
 ├── audio/
 │   ├── engine.js     AudioContext, master bus, lookahead scheduler
 │   ├── voices.js     procedural voices and sample playback
 │   └── kits.js       kit names, seed patterns, voicing tweaks
 ├── ui/
 │   ├── board.js      grid, row labels, tray, drag and drop, playhead
-│   └── panels.js     transport, session, inspector, channel strips
+│   ├── panels.js     transport, session, inspector, channel strips
+│   └── keyboard.js   shortcuts and roving focus
 └── assets/
     ├── maple-panel.png
     └── studio-desk.png

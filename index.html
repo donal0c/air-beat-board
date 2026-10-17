@@ -110,11 +110,22 @@
           </div>
         </section>
 
+        <section class="session-groove">
+          <div class="section-head">
+            <span>Groove</span>
+            <strong id="grooveReadout">Backbeat</strong>
+          </div>
+          <div id="grooveList" class="groove-list" role="listbox" aria-label="Groove templates"></div>
+          <div class="groove-actions">
+            <button id="mutateBtn" class="groove-action" title="Change a few cells, keep the feel">Mutate</button>
+            <button id="resetGrooveBtn" class="groove-action" title="Back to the selected groove">Reset</button>
+          </div>
+        </section>
+
         <section class="left-actions">
           <div class="section-head"><span>Sample import</span><strong id="sampleStatus">Built-in kit</strong></div>
           <div class="sample-actions">
             <button id="importBtn" class="sample-action">Import audio</button>
-            <button id="randomizeBtn" class="sample-action">Seed pattern</button>
             <button id="undoBtn" class="sample-action">Undo</button>
             <button id="redoBtn" class="sample-action">Redo</button>
           </div>
@@ -189,6 +200,11 @@
                 <button class="state-btn active" data-state="first">First<br><small>1/16</small></button>
                 <button class="state-btn" data-state="second">Second<br><small>2/16</small></button>
                 <button class="state-btn" data-state="both">Both<br><small>1 + 2</small></button>
+              </div>
+              <div class="row-actions">
+                <span id="rowActionsLabel">Kick row</span>
+                <button id="randomiseRowBtn" class="row-action" title="Random part for this row">Randomise</button>
+                <button id="resetRowBtn" class="row-action" title="This row back to the groove">Reset row</button>
               </div>
             </div>
 
