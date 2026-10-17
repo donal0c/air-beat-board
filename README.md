@@ -103,7 +103,7 @@ Recommended:
 ├── audio/
 │   ├── engine.js     AudioContext, master bus, lookahead scheduler
 │   ├── voices.js     procedural voices and sample playback
-│   └── kits.js       kit names, seed patterns, voicing tweaks
+│   └── kits.js       kit names and voicing tweaks
 ├── ui/
 │   ├── board.js      grid, row labels, tray, drag and drop, playhead
 │   ├── panels.js     transport, session, inspector, channel strips
